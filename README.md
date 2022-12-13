@@ -16,10 +16,12 @@
 
 * result
 
-    | App   | Tests   | bitnami (amd64) | bitnami-compat (amd64) | bitnami-compat (arm64) | official (amd64) | official (arm64) | official link |
-    | :---- | :------ | :-------------: | :--------------------: | :--------------------: | :--------------: | :--------------: | :-----------: |
-    | Minio | Goss    |        O        |           O            |           O            |                  |                  |               |
-    | Minio | Cypress |        O        |           O            |                        |                  |                  |               |
+    | App    | Tests   | bitnami (amd64) | bitnami-compat (amd64) | bitnami-compat (arm64) | official (amd64) | official (arm64) | official link |
+    | :----- | :------ | :-------------: | :--------------------: | :--------------------: | :--------------: | :--------------: | :-----------: |
+    | Minio  | Goss    |        O        |           O            |           O            |                  |                  |               |
+    | Minio  | Cypress |        O        |           O            |                        |                  |                  |               |
+    | Consul | Goss    |        O        |           O            |           O            |                  |                  |               |
+    | Consul | Cypress |        O        |           O            |                        |                  |                  |               |
 
 ## Todo
 
@@ -34,7 +36,7 @@
 * [ ] clickhouse
 * [ ] common
 * [ ] concourse
-* [ ] consul
+* [x] consul
 * [ ] contour
 * [ ] contour-operator
 * [ ] discourse
