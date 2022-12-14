@@ -1,20 +1,3 @@
-extraVolumes:
-  - name: goss
-    hostPath:
-      path: /bin/goss
-      type: File
-  - name: goss-data
-    hostPath:
-      path: /goss_data
-      type: Directory
-extraVolumeMounts:
-  - name: goss
-    mountPath: /bin/goss
-    readOnly: true
-  - name: goss-data
-    mountPath: /goss_data
-    readOnly: true
-
 ingress:
   enabled: true
   hostname: localhost

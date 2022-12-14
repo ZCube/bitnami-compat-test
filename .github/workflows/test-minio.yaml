@@ -9,9 +9,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-latest
-          - os: [self-hosted, linux, ARM64]
+        os: ["ubuntu-latest"]
+        USE_IMAGE_TYPE: ["bitnami", "bitnami-compat"]
+        APP_NAME: ["cert-manager", "consul", "contour", "contour-operator", "discourse", "elasticsearch", "etcd", "external-dns", "fluentd", "kafka", "keycloak", "mariadb", "mariadb-galera", "memcached", "minio", "mongodb", "mongodb-sharded", "mysql", "nginx", "node", "postgresql", "postgresql-ha", "rabbitmq", "rabbitmq-cluster-operator", "redis", "redis-cluster", "sealed-secrets", "solr", "thanos", "tomcat", "wordpress", "zookeeper", "apache"]
+        # include:
+        #   - os: ubuntu-latest
+        #     USE_IMAGE_TYPE: "bitnami"
+        #   - os: ubuntu-latest
+        #     USE_IMAGE_TYPE: "bitnami-compat"
+        #   # - os: [self-hosted, linux, ARM64]
+        #   #   USE_IMAGE_TYPE: "bitnami-compat"
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -43,7 +50,7 @@ jobs:
           export VERSION=v4.30.5
           export BINARY=yq_linux_$(dpkg --print-architecture)
           wget https://github.com/mikefarah/yq/releases/download/${VERSION}/${BINARY}.tar.gz -O - | tar xz
-          mv ${BINARY} /usr/local/bin/yq
+          sudo mv ${BINARY} /usr/local/bin/yq
 
       - name: install jq, binfmt-support
         run: |
@@ -53,7 +60,7 @@ jobs:
       - name: install goss
         run: |
           export GOSS_VER=v0.3.20
-          curl -fsSL https://goss.rocks/install | GOSS_DST=/usr/local/bin sh
+          curl -fsSL https://goss.rocks/install | GOSS_DST=/usr/local/bin sudo sh
 
       - name: install k3d
         run: |
@@ -64,8 +71,6 @@ jobs:
           k3d cluster stop test-cluster || true
           k3d cluster delete test-cluster || true
           k3d cluster create test-cluster \
-          -v /usr/local/bin/goss:/bin/goss:ro \
-          -v ${PWD}/charts/.vib:/goss_data \
           -p "80:80@agent:0:direct" \
           -p "443:443@agent:0:direct" \
           -p "8053:53/udp@agent:0:direct" \
@@ -75,23 +80,60 @@ jobs:
 
           kubectl apply -f local_path_config.yaml
 
-      - name: test minio
+      - name: execute
         run: |
+          export HELM_APP_NAME=${{ matrix.APP_NAME }}
           export HELM_RELEASE_NAME=test
+          export USE_IMAGE_TYPE=${{ matrix.USE_IMAGE_TYPE }}
+
+          cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | jq -r .phases.verify.context.runtime_parameters | base64 -d > values_bitnami.yaml
+
+          case "${USE_IMAGE_TYPE}" in
+            bitnami) 
+              helm upgrade -i ${HELM_RELEASE_NAME} bitnami/${HELM_APP_NAME} \
+                -f values_bitnami.yaml \
+                -f values_goss.yaml \
+                --wait --timeout 300s
+              ;;
+            bitnami-compat) 
+              helm upgrade -i ${HELM_RELEASE_NAME} bitnami/${HELM_APP_NAME} \
+                -f values_bitnami.yaml \
+                -f values_goss.yaml \
+                --wait --timeout 300s
+              ;;
+          esac;
+
+      - name: pull cypress
+        if: always()
+        run: |
           export CYPRESS_VERSION=9.7.0
-          declare -a APP_NAMES=( "cert-manager" "consul" "contour" "contour-operator" "discourse" "elasticsearch" "etcd" "external-dns" "fluentd" "kafka" "keycloak" "mariadb" "mariadb-galera" "memcached" "minio" "mongodb" "mongodb-sharded" "mysql" "nginx" "node" "postgresql" "postgresql-ha" "rabbitmq" "rabbitmq-cluster-operator" "redis" "redis-cluster" "sealed-secrets" "solr" "thanos" "tomcat" "wordpress" "zookeeper" "apache" )
 
-          set +e
-          for HELM_APP_NAME in ${APP_NAMES[@]}; do
-            cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | jq -r .phases.verify.context.runtime_parameters | base64 -d > values_bitnami.yaml
+          export HELM_APP_NAME=${{ matrix.APP_NAME }}
+          export HELM_RELEASE_NAME=test
+          export USE_IMAGE_TYPE=${{ matrix.USE_IMAGE_TYPE }}
 
-            helm upgrade -i ${HELM_RELEASE_NAME} bitnami/${HELM_APP_NAME} \
-              -f values_bitnami.yaml \
-              -f values_goss.yaml \
-              -f bitnami-compat/values/values_bitnami_compat_${HELM_APP_NAME}.yaml \
-              --wait --timeout 300s
+          if [ -f ./charts/.vib/${HELM_APP_NAME}/cypress/cypress.json ]
+          then
+            # cypress v9 amd64 only
+            dpkgArch="$(dpkg --print-architecture)"; dpkgArch="${dpkgArch##*-}";
+            case "$dpkgArch" in
+              amd64) 
+                docker pull cypress/included:${CYPRESS_VERSION}
+                ;;
+              arm64) 
+                # docker pull cypress/included:${CYPRESS_VERSION}
+                ;;
+            esac;
+          fi
 
-            cat <<EOF > svc.yaml
+      - name: add externalname svc
+        if: always()
+        run: |
+          export HELM_APP_NAME=${{ matrix.APP_NAME }}
+          export HELM_RELEASE_NAME=test
+          export USE_IMAGE_TYPE=${{ matrix.USE_IMAGE_TYPE }}
+
+          cat <<EOF > svc.yaml
           apiVersion: v1
           kind: Service
           metadata:
@@ -101,36 +143,96 @@ jobs:
             externalName: ${HELM_RELEASE_NAME}-${HELM_APP_NAME}.default.svc.cluster.local
           EOF
 
-            kubectl apply -f svc.yaml
+          kubectl apply -f svc.yaml
 
-            if [ -f ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml ]
-            then
-            
+      - name: dump pod info
+        if: always()
+        run: |
+          export HELM_APP_NAME=${{ matrix.APP_NAME }}
+          export HELM_RELEASE_NAME=test
+          export USE_IMAGE_TYPE=${{ matrix.USE_IMAGE_TYPE }}
+
+          # pod list
+          kubectl get pods
+          kubectl get svc
+          kubectl get ingress
+          kubectl get pv
+          kubectl get pvc
+
+          export GOSS_CONTAINER=$(kubectl get pods -n default \
+            -l=app.kubernetes.io/name=${HELM_APP_NAME} \
+            -l=app.kubernetes.io/instance=${HELM_RELEASE_NAME} \
+            -o go-template='{{range $k,$v := .items}}{{ $v.metadata.name}}{{"\n"}}{{end}}' | grep "${HELM_RELEASE_NAME}-${HELM_APP_NAME}-" | head -n 1 )
+
+          # pod logs
+          kubectl logs -n default ${GOSS_CONTAINER}
+
+          # pod describe
+          kubectl describe pod -n default ${GOSS_CONTAINER}
+
+      - name: test goss
+        if: always()
+        run: |
+          export HELM_APP_NAME=${{ matrix.APP_NAME }}
+          export HELM_RELEASE_NAME=test
+          export USE_IMAGE_TYPE=${{ matrix.USE_IMAGE_TYPE }}
+          
+          export GOSS_CONTAINER=$(kubectl get pods -n default \
+            -l=app.kubernetes.io/name=${HELM_APP_NAME} \
+            -l=app.kubernetes.io/instance=${HELM_RELEASE_NAME} \
+            -o go-template='{{range $k,$v := .items}}{{ $v.metadata.name}}{{"\n"}}{{end}}' | grep "${HELM_RELEASE_NAME}-${HELM_APP_NAME}-" | head -n 1 )
+
+          if [ -f ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml ]
+          then
             echo "================================================================"
             echo "${HELM_APP_NAME} goss"
             echo "================================================================"
 
+            echo Testing with pod: $GOSS_CONTAINER
+            
+            # kubectl cp /usr/local/bin/goss $GOSS_CONTAINER:/tmp/goss
+            # kubectl cp ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml $GOSS_CONTAINER:/tmp/goss.yaml
+            # if [ -f ./charts/.vib/${HELM_APP_NAME}/goss/vars.yaml ]
+            # then
+            #   kubectl cp ./charts/.vib/${HELM_APP_NAME}/goss/vars.yaml $GOSS_CONTAINER:/tmp/vars.yaml
+            # fi
+            
+            cat /usr/local/bin/goss | kubectl exec -i -n default $GOSS_CONTAINER "--" sh -c "cat > /tmp/goss"
+            kubectl exec -i -n default $GOSS_CONTAINER "--" sh -c "chmod +x /tmp/goss"
+            cat ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml | kubectl exec -i -n default $GOSS_CONTAINER "--" sh -c "cat > /tmp/goss.yaml"
             if [ -f ./charts/.vib/${HELM_APP_NAME}/goss/vars.yaml ]
             then
-            kubectl exec -n default $(kubectl get pod \
-              -l=app.kubernetes.io/name=${HELM_APP_NAME} \
-              -l=app.kubernetes.io/instance=${HELM_RELEASE_NAME} \
-              -n default -o jsonpath='{.items[0].metadata.name}') \
-              -- \
-              goss -g /goss_data/${HELM_APP_NAME}/goss/goss.yaml --vars /goss_data/${HELM_APP_NAME}/goss/vars.yaml v
-            else
-            kubectl exec -n default $(kubectl get pod \
-              -l=app.kubernetes.io/name=${HELM_APP_NAME} \
-              -l=app.kubernetes.io/instance=${HELM_RELEASE_NAME} \
-              -n default -o jsonpath='{.items[0].metadata.name}') \
-              -- \
-              goss -g /goss_data/${HELM_APP_NAME}/goss/goss.yaml v
+              cat ./charts/.vib/${HELM_APP_NAME}/goss/vars.yaml | kubectl exec -i -n default $GOSS_CONTAINER "--" sh -c "cat > /tmp/vars.yaml"
             fi
 
-            fi
-            if [ -f ./charts/.vib/${HELM_APP_NAME}/cypress/cypress.json ]
+            if [ -f ./charts/.vib/${HELM_APP_NAME}/goss/vars.yaml ]
             then
+            kubectl exec -n default $GOSS_CONTAINER \
+              -- \
+              /tmp/goss -g /tmp/goss.yaml --vars /tmp/vars.yaml v
+            else
+            kubectl exec -n default $GOSS_CONTAINER \
+              -- \
+              /tmp/goss -g /tmp/goss.yaml v
+            fi
+          fi
 
+      - name: test cypress
+        if: always()
+        run: |
+          export CYPRESS_VERSION=9.7.0
+
+          export HELM_APP_NAME=${{ matrix.APP_NAME }}
+          export HELM_RELEASE_NAME=test
+          export USE_IMAGE_TYPE=${{ matrix.USE_IMAGE_TYPE }}
+          
+          export GOSS_CONTAINER=$(kubectl get pods -n default \
+            -l=app.kubernetes.io/name=${HELM_APP_NAME} \
+            -l=app.kubernetes.io/instance=${HELM_RELEASE_NAME} \
+            -o go-template='{{range $k,$v := .items}}{{ $v.metadata.name}}{{"\n"}}{{end}}' | grep "${HELM_RELEASE_NAME}-${HELM_APP_NAME}-" | head -n 1 )
+
+          if [ -f ./charts/.vib/${HELM_APP_NAME}/cypress/cypress.json ]
+          then
             # cypress v9 amd64 only
             dpkgArch="$(dpkg --print-architecture)"; dpkgArch="${dpkgArch##*-}";
             case "$dpkgArch" in
@@ -147,41 +249,18 @@ jobs:
                 # docker run --rm --network host -v ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress:/e2e -w /e2e cypress/included:${CYPRESS_VERSION}
                 ;;
             esac;
-
-            fi
-
-            # pod list
-            kubectl get pods
-            kubectl get svc
-            kubectl get ingress
-            kubectl get pv
-            kubectl get pvc
-
-            # pod logs
-            kubectl logs -n default $(kubectl get pod \
-              -l=app.kubernetes.io/name=${HELM_APP_NAME} \
-              -l=app.kubernetes.io/instance=${HELM_RELEASE_NAME} \
-              -n default -o jsonpath='{.items[0].metadata.name}')
-
-            # pod describe
-            kubectl describe pod -n default $(kubectl get pod \
-              -l=app.kubernetes.io/name=${HELM_APP_NAME} \
-              -l=app.kubernetes.io/instance=${HELM_RELEASE_NAME} \
-              -n default -o jsonpath='{.items[0].metadata.name}')
-
-            kubectl delete -f svc.yaml
-            helm uninstall test \
-              --wait --timeout 300s
-            kubectl delete pvc --all 
-            kubectl delete ingress --all 
-            kubectl delete svc --all 
-          done
-
-          set -e
+          fi
 
       - name: Cleanup k3d
         if: always()
         run: |
+          kubectl delete -f svc.yaml
+          helm uninstall test \
+            --wait --timeout 300s
+          kubectl delete pvc --all 
+          kubectl delete ingress --all 
+          kubectl delete svc --all 
+
           k3d cluster stop test-cluster
           k3d cluster delete test-cluster
           docker run --privileged --rm tonistiigi/binfmt --uninstall all
