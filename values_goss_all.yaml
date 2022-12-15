@@ -1,0 +1,1500 @@
+---
+extraVolumes:
+- name: goss
+  hostPath:
+    path: "/bin/goss"
+    type: File
+- name: goss-data
+  hostPath:
+    path: "/goss_data"
+    type: Directory
+extraVolumeMounts:
+- name: goss
+  mountPath: "/bin/goss"
+  readOnly: true
+- name: goss-data
+  mountPath: "/goss_data"
+  readOnly: true
+web:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+scheduler:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+worker:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+controller:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+server:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+repoServer:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+dex:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+webhook:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+cainjector:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+contour:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+envoy:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+defaultBackend:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+master:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+data:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+coordinating:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+ingest:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+metrics:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+forwarder:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+aggregator:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+compactor:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+gateway:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+indexGateway:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+distributor:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+ingester:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+querier:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+queryFrontend:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+queryScheduler:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+ruler:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+tableManager:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+promtail:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+operator:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+grafana:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+metricsGenerator:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+vulture:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+imageRenderer:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+nginx:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+portal:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+core:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+jobservice:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+registry:
+  extraVolumes: []
+chartmuseum:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+notary:
+  server:
+    extraVolumes:
+    - name: goss
+      hostPath:
+        path: "/bin/goss"
+        type: File
+    - name: goss-data
+      hostPath:
+        path: "/goss_data"
+        type: Directory
+    extraVolumeMounts:
+    - name: goss
+      mountPath: "/bin/goss"
+      readOnly: true
+    - name: goss-data
+      mountPath: "/goss_data"
+      readOnly: true
+  signer:
+    extraVolumes:
+    - name: goss
+      hostPath:
+        path: "/bin/goss"
+        type: File
+    - name: goss-data
+      hostPath:
+        path: "/goss_data"
+        type: Directory
+    extraVolumeMounts:
+    - name: goss
+      mountPath: "/bin/goss"
+      readOnly: true
+    - name: goss-data
+      mountPath: "/goss_data"
+      readOnly: true
+trivy:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+exporter:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+influxdb:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+hub:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+proxy:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+imagePuller:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+singleuser:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+provisioning:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+keycloakConfigCli:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+agent:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+blackboxExporter:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+frontend:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+dashboard:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+apprepository:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+kubeappsapis:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+primary:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+secondary:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+speaker:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+common:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+configsvr:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+mongos:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+shardsvr:
+  dataNode:
+    extraVolumes:
+    - name: goss
+      hostPath:
+        path: "/bin/goss"
+        type: File
+    - name: goss-data
+      hostPath:
+        path: "/goss_data"
+        type: Directory
+    extraVolumeMounts:
+    - name: goss
+      mountPath: "/bin/goss"
+      readOnly: true
+    - name: goss-data
+      mountPath: "/goss_data"
+      readOnly: true
+  arbiter:
+    extraVolumes:
+    - name: goss
+      hostPath:
+        path: "/bin/goss"
+        type: File
+    - name: goss-data
+      hostPath:
+        path: "/goss_data"
+        type: Directory
+    extraVolumeMounts:
+    - name: goss
+      mountPath: "/bin/goss"
+      readOnly: true
+    - name: goss-data
+      mountPath: "/goss_data"
+      readOnly: true
+arbiter:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+hidden:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+standalone:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+concierge:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+supervisor:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+postgresql:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+pgpool:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+readReplicas:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+clusterOperator:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+msgTopologyOperator:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+redis:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+updateJob:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+replica:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+sentinel:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+mailReceiver:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+skipper:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+query:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+bucketweb:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+storegateway:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+receive:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+receiveDistributor:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true
+collector:
+  extraVolumes:
+  - name: goss
+    hostPath:
+      path: "/bin/goss"
+      type: File
+  - name: goss-data
+    hostPath:
+      path: "/goss_data"
+      type: Directory
+  extraVolumeMounts:
+  - name: goss
+    mountPath: "/bin/goss"
+    readOnly: true
+  - name: goss-data
+    mountPath: "/goss_data"
+    readOnly: true

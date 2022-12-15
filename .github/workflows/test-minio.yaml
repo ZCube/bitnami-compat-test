@@ -65,20 +65,31 @@ jobs:
       - name: install k3d
         run: |
           wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.4.6 bash
+          
+      - name: install mustache mo
+        run: |
+          curl -sSL https://git.io/get-mo -o mo
+          chmod +x mo
+          sudo mv mo /usr/local/bin/
 
       - name: prepare k3s cluster by k3d
         run: |
           k3d cluster stop test-cluster || true
           k3d cluster delete test-cluster || true
           k3d cluster create test-cluster \
-          -p "80:80@agent:0:direct" \
-          -p "443:443@agent:0:direct" \
-          -p "8053:53/udp@agent:0:direct" \
-          --agents 3 \
+          -v /usr/local/bin/goss:/bin/goss:ro \
+          -v ${PWD}/charts/.vib:/goss_data \
+          -p "80:28080@agent:0:direct" \
+          -p "443:28443@agent:0:direct" \
+          --agents 4 \
           --image docker.io/rancher/k3s:v1.25.4-k3s1 \
           --wait
 
+          kubectl taint nodes  -l node-role.kubernetes.io/master=true         node-role.kubernetes.io=master:NoSchedule   --overwrite=true
+          kubectl taint nodes  -l node-role.kubernetes.io/control-plane=true  node-role.kubernetes.io=control-plane:NoSchedule   --overwrite=true
+          
           kubectl apply -f local_path_config.yaml
+          kubectl apply -f traefik_config.yaml
 
       - name: execute
         run: |
@@ -92,13 +103,14 @@ jobs:
             bitnami) 
               helm upgrade -i ${HELM_RELEASE_NAME} bitnami/${HELM_APP_NAME} \
                 -f values_bitnami.yaml \
-                -f values_goss.yaml \
+                --set fullnameOverride=${HELM_APP_NAME} \
                 --wait --timeout 300s
               ;;
             bitnami-compat) 
               helm upgrade -i ${HELM_RELEASE_NAME} bitnami/${HELM_APP_NAME} \
                 -f values_bitnami.yaml \
-                -f values_goss.yaml \
+                -f bitnami-compat/values/values_bitnami_compat_${HELM_APP_NAME}.yaml \
+                --set fullnameOverride=${HELM_APP_NAME} \
                 --wait --timeout 300s
               ;;
           esac;
@@ -114,6 +126,105 @@ jobs:
 
           if [ -f ./charts/.vib/${HELM_APP_NAME}/cypress/cypress.json ]
           then
+            export ENDPOINT=$(cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | jq -r '(.phases.verify.actions[] | select(has("action_id") and .action_id == "cypress")) | .params.endpoint')
+            export SVC_PROTOCOL=$(cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | jq -r '(.phases.verify.actions[] | select(has("action_id") and .action_id == "cypress")) | .params.app_protocol' | tr '[:upper:]' '[:lower:]')
+            export SVC_AND_PORT_NAME=$(echo $ENDPOINT | sed -E 's/([^-]*)-(.*)/\2/')
+            export SVC_PORT_INFO=$(kubectl get svc -o go-template='{{range $k,$v:=.items}}{{range.spec.ports}}{{if .name}}{{$v.metadata.name}}-{{.name}} {{$v.metadata.name}} {{.name}} {{.port}}{{"\n"}}{{$v.metadata.name}}-{{.port}} {{$v.metadata.name}} {{.name}} {{.port}}{{"\n"}}{{else}}{{$v.metadata.name}}-{{.port}} {{$v.metadata.name}} noname {{.port}}{{"\n"}}{{end}}{{end}}{{end}}' | grep ${SVC_AND_PORT_NAME})
+            export SVC_NAME=$(echo ${SVC_PORT_INFO} | awk '{print $2}')
+            export SVC_PORT=$(echo ${SVC_PORT_INFO} | awk '{print $4}')
+            export SVC_PORT_NUM=$(echo ${SVC_PORT_INFO} | awk '{print $4}')
+            echo SVC info : ${ENDPOINT} ${SVC_NAME} ${SVC_PORT} ${SVC_PORT_NUM}
+            # sudo KUBECONFIG=$HOME/.kube/config kubectl port-forward service/${SVC_NAME} 80:${SVC_PORT_NUM} --address='0.0.0.0' &
+            # sudo KUBECONFIG=$HOME/.kube/config kubectl port-forward service/${SVC_NAME} ${SVC_PORT_NUM}:${SVC_PORT_NUM} --address='0.0.0.0' &
+            export TARGET_IP=$(ip a show $(ip route show default | awk '/default/ {print $5}') | grep "inet " | awk '{print $2}' | cut -d"/" -f1)
+
+            case "${SVC_PROTOCOL}" in
+              https) 
+            cat <<EOF > ingress.yaml
+          ---
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: ServersTransport
+          metadata:
+            name: insecuretransport
+            namespace: default
+
+          spec:
+            insecureSkipVerify: true
+          ---
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: Middleware
+          metadata:
+            name: https
+          spec:
+            redirectScheme:
+              scheme: https
+              permanent: true
+          ---
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: IngressRoute
+          metadata:
+            name: cypress
+            namespace: default
+          spec:
+            entryPoints:
+            - web
+            - websecure
+            routes:
+            - kind: Rule
+              match: PathPrefix(\`/\`)
+              services:
+              - name: ${SVC_NAME}
+                port: ${SVC_PORT_NUM}
+                scheme: ${SVC_PROTOCOL}
+                serversTransport: insecuretransport
+              middlewares:
+              - name: https
+          EOF
+            kubectl apply -f ingress.yaml
+                ;;
+              *) 
+            cat <<EOF > ingress.yaml
+          ---
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: ServersTransport
+          metadata:
+            name: insecuretransport
+            namespace: default
+
+          spec:
+            insecureSkipVerify: true
+          ---
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: Middleware
+          metadata:
+            name: https
+          spec:
+            redirectScheme:
+              scheme: https
+              permanent: true
+          ---
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: IngressRoute
+          metadata:
+            name: cypress
+            namespace: default
+          spec:
+            entryPoints:
+            - web
+            - websecure
+            routes:
+            - kind: Rule
+              match: PathPrefix(\`/\`)
+              services:
+              - name: ${SVC_NAME}
+                port: ${SVC_PORT_NUM}
+                scheme: ${SVC_PROTOCOL}
+                serversTransport: insecuretransport
+          EOF
+            kubectl apply -f ingress.yaml
+                ;;
+            esac;
+
             # cypress v9 amd64 only
             dpkgArch="$(dpkg --print-architecture)"; dpkgArch="${dpkgArch##*-}";
             case "$dpkgArch" in
@@ -125,25 +236,6 @@ jobs:
                 ;;
             esac;
           fi
-
-      - name: add externalname svc
-        if: always()
-        run: |
-          export HELM_APP_NAME=${{ matrix.APP_NAME }}
-          export HELM_RELEASE_NAME=test
-          export USE_IMAGE_TYPE=${{ matrix.USE_IMAGE_TYPE }}
-
-          cat <<EOF > svc.yaml
-          apiVersion: v1
-          kind: Service
-          metadata:
-            name: ${HELM_APP_NAME}
-          spec:
-            type: ExternalName
-            externalName: ${HELM_RELEASE_NAME}-${HELM_APP_NAME}.default.svc.cluster.local
-          EOF
-
-          kubectl apply -f svc.yaml
 
       - name: dump pod info
         if: always()
@@ -159,16 +251,30 @@ jobs:
           kubectl get pv
           kubectl get pvc
 
-          export GOSS_CONTAINER=$(kubectl get pods -n default \
-            -l=app.kubernetes.io/name=${HELM_APP_NAME} \
-            -l=app.kubernetes.io/instance=${HELM_RELEASE_NAME} \
-            -o go-template='{{range $k,$v := .items}}{{ $v.metadata.name}}{{"\n"}}{{end}}' | grep "${HELM_RELEASE_NAME}-${HELM_APP_NAME}-" | head -n 1 )
+          if [ -f ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml ]
+          then
+            export POD_TYPE=$(cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | jq -r '(.phases.verify.actions[] | select(has("action_id") and .action_id == "goss")) | .params.remote.workload' | cut -d '-' -f1)
+            export POD_NAME=$(cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | jq -r '(.phases.verify.actions[] | select(has("action_id") and .action_id == "goss")) | .params.remote.workload' | cut -d '-' -f2-)
 
-          # pod logs
-          kubectl logs -n default ${GOSS_CONTAINER}
+            case "${POD_TYPE}" in
+              pod) 
+                ;;
+              *) 
+                export OWNER_UID=$(kubectl get ${POD_TYPE} ${POD_NAME} -o jsonpath='{.metadata.uid}')
+                export REPLICA_NAME=$(kubectl get rs -o go-template='{{range .items}}{{.metadata.name}} {{if .metadata.ownerReferences}}{{range .metadata.ownerReferences}} {{.uid}} {{end}}{{end}} {{"\n"}}{{end}}' | grep $OWNER_UID | head -n 1 | awk '{print $1}')
+                if [ ! -z ${REPLICA_NAME} ]; then
+                  export OWNER_UID=$(kubectl get rs ${REPLICA_NAME} -o jsonpath='{.metadata.uid}');
+                fi
+                export POD_NAME=$(kubectl get pods -o go-template='{{range .items}}{{.metadata.name}} {{if .metadata.ownerReferences}}{{range .metadata.ownerReferences}} {{.uid}} {{end}}{{end}} {{"\n"}}{{end}}' | grep $OWNER_UID | head -n 1 | awk '{print $1}')
+                ;;
+            esac;
 
-          # pod describe
-          kubectl describe pod -n default ${GOSS_CONTAINER}
+            # pod logs
+            kubectl logs -n default ${POD_NAME}
+
+            # pod describe
+            kubectl describe pod -n default ${POD_NAME}
+          fi
 
       - name: test goss
         if: always()
@@ -176,44 +282,57 @@ jobs:
           export HELM_APP_NAME=${{ matrix.APP_NAME }}
           export HELM_RELEASE_NAME=test
           export USE_IMAGE_TYPE=${{ matrix.USE_IMAGE_TYPE }}
-          
-          export GOSS_CONTAINER=$(kubectl get pods -n default \
-            -l=app.kubernetes.io/name=${HELM_APP_NAME} \
-            -l=app.kubernetes.io/instance=${HELM_RELEASE_NAME} \
-            -o go-template='{{range $k,$v := .items}}{{ $v.metadata.name}}{{"\n"}}{{end}}' | grep "${HELM_RELEASE_NAME}-${HELM_APP_NAME}-" | head -n 1 )
 
           if [ -f ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml ]
           then
+            export POD_TYPE=$(cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | jq -r '(.phases.verify.actions[] | select(has("action_id") and .action_id == "goss")) | .params.remote.workload' | cut -d '-' -f1)
+            export POD_NAME=$(cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | jq -r '(.phases.verify.actions[] | select(has("action_id") and .action_id == "goss")) | .params.remote.workload' | cut -d '-' -f2-)
+
+            case "${POD_TYPE}" in
+              pod) 
+                ;;
+              *) 
+                export OWNER_UID=$(kubectl get ${POD_TYPE} ${POD_NAME} -o jsonpath='{.metadata.uid}')
+                export REPLICA_NAME=$(kubectl get rs -o go-template='{{range .items}}{{.metadata.name}} {{if .metadata.ownerReferences}}{{range .metadata.ownerReferences}} {{.uid}} {{end}}{{end}} {{"\n"}}{{end}}' | grep $OWNER_UID | head -n 1 | awk '{print $1}')
+                if [ ! -z ${REPLICA_NAME} ]; then
+                  export OWNER_UID=$(kubectl get rs ${REPLICA_NAME} -o jsonpath='{.metadata.uid}');
+                fi
+                export POD_NAME=$(kubectl get pods -o go-template='{{range .items}}{{.metadata.name}} {{if .metadata.ownerReferences}}{{range .metadata.ownerReferences}} {{.uid}} {{end}}{{end}} {{"\n"}}{{end}}' | grep $OWNER_UID | head -n 1 | awk '{print $1}')
+                ;;
+            esac;
+
             echo "================================================================"
             echo "${HELM_APP_NAME} goss"
             echo "================================================================"
 
-            echo Testing with pod: $GOSS_CONTAINER
+            echo Testing with pod: $POD_NAME
             
-            # kubectl cp /usr/local/bin/goss $GOSS_CONTAINER:/tmp/goss
-            # kubectl cp ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml $GOSS_CONTAINER:/tmp/goss.yaml
+            # kubectl cp /usr/local/bin/goss $POD_NAME:/tmp/goss
+            # kubectl cp ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml $POD_NAME:/tmp/goss.yaml
             # if [ -f ./charts/.vib/${HELM_APP_NAME}/goss/vars.yaml ]
             # then
-            #   kubectl cp ./charts/.vib/${HELM_APP_NAME}/goss/vars.yaml $GOSS_CONTAINER:/tmp/vars.yaml
+            #   kubectl cp ./charts/.vib/${HELM_APP_NAME}/goss/vars.yaml $POD_NAME:/tmp/vars.yaml
             # fi
             
-            cat /usr/local/bin/goss | kubectl exec -i -n default $GOSS_CONTAINER "--" sh -c "cat > /tmp/goss"
-            kubectl exec -i -n default $GOSS_CONTAINER "--" sh -c "chmod +x /tmp/goss"
-            cat ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml | kubectl exec -i -n default $GOSS_CONTAINER "--" sh -c "cat > /tmp/goss.yaml"
+            cat /usr/local/bin/goss | kubectl exec -i -n default $POD_NAME "--" sh -c "cat > /tmp/goss"
+            kubectl exec -i -n default $POD_NAME "--" sh -c "chmod +x /tmp/goss"
+            cat ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml | kubectl exec -i -n default $POD_NAME "--" sh -c "cat > /tmp/goss.yaml"
             if [ -f ./charts/.vib/${HELM_APP_NAME}/goss/vars.yaml ]
             then
-              cat ./charts/.vib/${HELM_APP_NAME}/goss/vars.yaml | kubectl exec -i -n default $GOSS_CONTAINER "--" sh -c "cat > /tmp/vars.yaml"
+              cat ./charts/.vib/${HELM_APP_NAME}/goss/vars.yaml | kubectl exec -i -n default $POD_NAME "--" sh -c "cat > /tmp/vars.yaml"
             fi
 
             if [ -f ./charts/.vib/${HELM_APP_NAME}/goss/vars.yaml ]
             then
-            kubectl exec -n default $GOSS_CONTAINER \
+            kubectl exec -n default $POD_NAME \
               -- \
               /tmp/goss -g /tmp/goss.yaml --vars /tmp/vars.yaml v
+              # goss -g /goss_data/${HELM_APP_NAME}/goss/goss.yaml --vars /goss_data/${HELM_APP_NAME}/goss/vars.yaml v
             else
-            kubectl exec -n default $GOSS_CONTAINER \
+            kubectl exec -n default $POD_NAME \
               -- \
               /tmp/goss -g /tmp/goss.yaml v
+              # goss -g /goss_data/${HELM_APP_NAME}/goss/goss.yaml v
             fi
           fi
 
@@ -225,14 +344,31 @@ jobs:
           export HELM_APP_NAME=${{ matrix.APP_NAME }}
           export HELM_RELEASE_NAME=test
           export USE_IMAGE_TYPE=${{ matrix.USE_IMAGE_TYPE }}
-          
-          export GOSS_CONTAINER=$(kubectl get pods -n default \
-            -l=app.kubernetes.io/name=${HELM_APP_NAME} \
-            -l=app.kubernetes.io/instance=${HELM_RELEASE_NAME} \
-            -o go-template='{{range $k,$v := .items}}{{ $v.metadata.name}}{{"\n"}}{{end}}' | grep "${HELM_RELEASE_NAME}-${HELM_APP_NAME}-" | head -n 1 )
 
           if [ -f ./charts/.vib/${HELM_APP_NAME}/cypress/cypress.json ]
           then
+            export ENDPOINT=$(cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | jq -r '(.phases.verify.actions[] | select(has("action_id") and .action_id == "cypress")) | .params.endpoint')
+            export SVC_PROTOCOL=$(cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | jq -r '(.phases.verify.actions[] | select(has("action_id") and .action_id == "cypress")) | .params.app_protocol' | tr '[:upper:]' '[:lower:]')
+            export SVC_AND_PORT_NAME=$(echo $ENDPOINT | sed -E 's/([^-]*)-(.*)/\2/')
+            export SVC_PORT_INFO=$(kubectl get svc -o go-template='{{range $k,$v:=.items}}{{range.spec.ports}}{{if .name}}{{$v.metadata.name}}-{{.name}} {{$v.metadata.name}} {{.name}} {{.port}}{{"\n"}}{{$v.metadata.name}}-{{.port}} {{$v.metadata.name}} {{.name}} {{.port}}{{"\n"}}{{else}}{{$v.metadata.name}}-{{.port}} {{$v.metadata.name}} noname {{.port}}{{"\n"}}{{end}}{{end}}{{end}}' | grep ${SVC_AND_PORT_NAME})
+            export SVC_NAME=$(echo ${SVC_PORT_INFO} | awk '{print $2}')
+            export SVC_PORT=$(echo ${SVC_PORT_INFO} | awk '{print $4}')
+            export SVC_PORT_NUM=$(echo ${SVC_PORT_INFO} | awk '{print $4}')
+            echo SVC info : ${ENDPOINT} ${SVC_NAME} ${SVC_PORT} ${SVC_PORT_NUM}
+            # sudo KUBECONFIG=$HOME/.kube/config kubectl port-forward service/${SVC_NAME} 80:${SVC_PORT_NUM} --address='0.0.0.0' &
+            # sudo KUBECONFIG=$HOME/.kube/config kubectl port-forward service/${SVC_NAME} ${SVC_PORT_NUM}:${SVC_PORT_NUM} --address='0.0.0.0' &
+            export TARGET_IP=$(ip a show $(ip route show default | awk '/default/ {print $5}') | grep "inet " | awk '{print $2}' | cut -d"/" -f1)
+
+            # template
+            cat ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress/cypress.json | mo > ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress/cypress.json_
+            cp -f ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress/cypress.json_ ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress/cypress.json
+
+            cat ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress/cypress.json | jq '. + {"chromeWebSecurity": false}' > ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress/cypress.json_
+            cp ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress/cypress.json_ ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress/cypress.json
+
+            cat ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress/cypress.json | sed -E "s/localhost/${TARGET_IP}/g" > ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress/cypress.json_
+            cp ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress/cypress.json_ ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress/cypress.json
+
             # cypress v9 amd64 only
             dpkgArch="$(dpkg --print-architecture)"; dpkgArch="${dpkgArch##*-}";
             case "$dpkgArch" in
@@ -241,25 +377,29 @@ jobs:
                 echo "${HELM_APP_NAME} cypress"
                 echo "================================================================"
 
-                docker run --privileged --rm tonistiigi/binfmt --install all
-                docker run --rm --network host -v ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress:/e2e -w /e2e cypress/included:${CYPRESS_VERSION}
+                docker run --rm -v ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress:/e2e -w /e2e cypress/included:${CYPRESS_VERSION} --headless --browser chrome
                 ;;
               arm64) 
+                echo "================================================================"
+                echo "${HELM_APP_NAME} cypress"
+                echo "================================================================"
+                
                 # docker run --privileged --rm tonistiigi/binfmt --install all
-                # docker run --rm --network host -v ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress:/e2e -w /e2e cypress/included:${CYPRESS_VERSION}
+                # docker run --rm -v ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress:/e2e -w /e2e cypress/included:${CYPRESS_VERSION} --headless --browser chrome
                 ;;
             esac;
+
+            # sudo pkill kubectl
           fi
 
       - name: Cleanup k3d
         if: always()
         run: |
-          kubectl delete -f svc.yaml
-          helm uninstall test \
-            --wait --timeout 300s
-          kubectl delete pvc --all 
-          kubectl delete ingress --all 
-          kubectl delete svc --all 
+          # helm uninstall test \
+          #   --wait --timeout 300s || true
+          # kubectl delete pvc --all 
+          # kubectl delete ingress --all 
+          # kubectl delete svc --all 
 
           k3d cluster stop test-cluster
           k3d cluster delete test-cluster
