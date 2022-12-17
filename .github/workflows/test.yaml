@@ -10,16 +10,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest"]
+        os: ["ubuntu-latest", "ARM64"]
         USE_IMAGE_TYPE: ["bitnami", "bitnami-compat"]
         APP_NAME: ["cert-manager", "consul", "contour", "contour-operator", "discourse", "elasticsearch", "etcd", "external-dns", "fluentd", "kafka", "keycloak", "mariadb", "mariadb-galera", "memcached", "minio", "mongodb", "mongodb-sharded", "mysql", "nginx", "node", "postgresql", "postgresql-ha", "rabbitmq", "rabbitmq-cluster-operator", "redis", "redis-cluster", "sealed-secrets", "solr", "thanos", "tomcat", "wordpress", "zookeeper", "apache"]
-        # include:
-        #   - os: ubuntu-latest
-        #     USE_IMAGE_TYPE: "bitnami"
-        #   - os: ubuntu-latest
-        #     USE_IMAGE_TYPE: "bitnami-compat"
-        #   # - os: [self-hosted, linux, ARM64]
-        #   #   USE_IMAGE_TYPE: "bitnami-compat"
+        exclude:
+          - os: "ARM64"
+            USE_IMAGE_TYPE: "bitnami"
+
     outputs:
       bitnami-amd64-cert-manager-goss: ${{ steps.goss.outputs.bitnami-amd64-cert-manager-goss }}
       bitnami-compat-arm64-cert-manager-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-cert-manager-goss }}
