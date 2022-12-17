@@ -9,11 +9,11 @@ for HELM_APP_NAME in ${APP_NAMES[@]}; do
                 [[ "${ARCH}" == "arm64" && "${USE_IMAGE_TYPE}" == "bitnami" ]] && continue
                 if [ -f ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml ]
                 then
-                    echo       ${USE_IMAGE_TYPE}-${ARCH}-${HELM_APP_NAME}-goss: \$\{\{ steps.goss.outputs.${USE_IMAGE_TYPE}-${ARCH}-${HELM_APP_NAME} \}\}
+                    echo       ${USE_IMAGE_TYPE}-${ARCH}-${HELM_APP_NAME}-goss: \$\{\{ steps.goss.outputs.${USE_IMAGE_TYPE}-${ARCH}-${HELM_APP_NAME}-goss \}\}
                 fi
                 if [ -f ./charts/.vib/${HELM_APP_NAME}/cypress/cypress.json ]
                 then
-                    echo       ${USE_IMAGE_TYPE}-${ARCH}-${HELM_APP_NAME}-cypress: \$\{\{ steps.cypress.outputs.${USE_IMAGE_TYPE}-${ARCH}-${HELM_APP_NAME} \}\}
+                    echo       ${USE_IMAGE_TYPE}-${ARCH}-${HELM_APP_NAME}-cypress: \$\{\{ steps.cypress.outputs.${USE_IMAGE_TYPE}-${ARCH}-${HELM_APP_NAME}-cypress \}\}
                 fi
             done
       done

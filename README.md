@@ -13,15 +13,53 @@
 
 * note
   * cypress v9 does not support arm64 so not tested 
+  * Since the test environment is not yet complete, the bitnami official image also has an error.
 
 * result
 
     | App    | Tests   | bitnami (amd64) | bitnami-compat (amd64) | bitnami-compat (arm64) | official (amd64) | official (arm64) | official link |
     | :----- | :------ | :-------------: | :--------------------: | :--------------------: | :--------------: | :--------------: | :-----------: |
-    | Minio  | Goss    |        O        |           O            |           O            |                  |                  |               |
-    | Minio  | Cypress |        O        |           O            |                        |                  |                  |               |
-    | Consul | Goss    |        O        |           O            |           O            |                  |                  |               |
-    | Consul | Cypress |        O        |           O            |                        |                  |                  |               |
+    | cert-manager  | Goss    |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | consul  | Goss    |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | consul  | Cypress |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | contour  | Goss    |  :heavy_check_mark: | :x: |      |                  |                  |               |
+    | discourse  | Goss    |  :x: | :x: |      |                  |                  |               |
+    | discourse  | Cypress |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | elasticsearch  | Goss    |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | elasticsearch  | Cypress |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | etcd  | Goss    |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | external-dns  | Goss    |  :heavy_check_mark: | :x: |      |                  |                  |               |
+    | fluentd  | Goss    |  :x: | :x: |      |                  |                  |               |
+    | kafka  | Goss    |  :heavy_check_mark: |  |      |                  |                  |               |
+    | keycloak  | Goss    |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | keycloak  | Cypress |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | mariadb  | Goss    |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | mariadb-galera  | Goss    |  :heavy_check_mark: |  |      |                  |                  |               |
+    | memcached  | Goss    |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | minio  | Goss    |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | minio  | Cypress |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | mongodb  | Goss    |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | mongodb-sharded  | Goss    |  :heavy_check_mark: | :x: |      |                  |                  |               |
+    | mysql  | Goss    |  :heavy_check_mark: |  |      |                  |                  |               |
+    | nginx  | Goss    |  :heavy_check_mark: |  |      |                  |                  |               |
+    | nginx  | Cypress |  :heavy_check_mark: | :x: |      |                  |                  |               |
+    | postgresql  | Goss    |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | rabbitmq  | Goss    |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | rabbitmq  | Cypress |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | rabbitmq-cluster-operator  | Goss    |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | rabbitmq-cluster-operator  | Cypress |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | redis  | Goss    |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | redis-cluster  | Goss    |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | sealed-secrets  | Cypress |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | solr  | Goss    |  :x: | :x: |      |                  |                  |               |
+    | solr  | Cypress |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | tomcat  | Goss    |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | tomcat  | Cypress |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | wordpress  | Goss    |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | wordpress  | Cypress |  :heavy_check_mark: | :x: |      |                  |                  |               |
+    | zookeeper  | Goss    |  :heavy_check_mark: | :heavy_check_mark: |      |                  |                  |               |
+    | apache  | Goss    |  :heavy_check_mark: |  |      |                  |                  |               |
+    | apache  | Cypress |  :heavy_check_mark: | :x: |      |                  |                  |               |
 
 ## Todo
 
