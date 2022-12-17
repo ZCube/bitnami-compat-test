@@ -6,6 +6,10 @@ on:
 jobs:
   test:
     runs-on: ${{ matrix.os }}
+    if: >-
+      ${{ !contains(github.event.head_commit.message, '[ci skip]') &&
+      !contains(github.event.head_commit.message, '[skip ci]')
+      }}
     continue-on-error: true
     strategy:
       fail-fast: false
@@ -270,7 +274,6 @@ jobs:
           metadata:
             name: insecuretransport
             namespace: default
-
           spec:
             insecureSkipVerify: true
           ---
@@ -278,6 +281,7 @@ jobs:
           kind: Middleware
           metadata:
             name: https
+            namespace: default
           spec:
             redirectScheme:
               scheme: https
@@ -313,7 +317,6 @@ jobs:
           metadata:
             name: insecuretransport
             namespace: default
-
           spec:
             insecureSkipVerify: true
           ---
@@ -321,6 +324,7 @@ jobs:
           kind: Middleware
           metadata:
             name: https
+            namespace: default
           spec:
             redirectScheme:
               scheme: https
@@ -471,9 +475,11 @@ jobs:
               status=$?
               set -e
               if [ $status -eq 0 ]; then
-                echo "::set-output name=${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-goss::success"
+                echo "${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-goss=success" >> $GITHUB_OUTPUT
+                echo "${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-goss=success"
               else
-                echo "::set-output name=${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-goss::fail"
+                echo "${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-goss=fail" >> $GITHUB_OUTPUT
+                echo "${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-goss=fail"
                 exit $status
               fi
               # goss -g /goss_data/${HELM_APP_NAME}/goss/goss.yaml v
