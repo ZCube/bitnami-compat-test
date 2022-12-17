@@ -6,6 +6,7 @@ on:
 jobs:
   test:
     runs-on: ${{ matrix.os }}
+    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
@@ -19,6 +20,131 @@ jobs:
         #     USE_IMAGE_TYPE: "bitnami-compat"
         #   # - os: [self-hosted, linux, ARM64]
         #   #   USE_IMAGE_TYPE: "bitnami-compat"
+    outputs:
+      bitnami-amd64-cert-manager-goss: ${{ steps.goss.outputs.bitnami-amd64-cert-manager-goss }}
+      bitnami-compat-arm64-cert-manager-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-cert-manager-goss }}
+      bitnami-compat-amd64-cert-manager-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-cert-manager-goss }}
+      bitnami-amd64-consul-goss: ${{ steps.goss.outputs.bitnami-amd64-consul-goss }}
+      bitnami-amd64-consul-cypress: ${{ steps.cypress.outputs.bitnami-amd64-consul-cypress }}
+      bitnami-compat-arm64-consul-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-consul-goss }}
+      bitnami-compat-arm64-consul-cypress: ${{ steps.cypress.outputs.bitnami-compat-arm64-consul-cypress }}
+      bitnami-compat-amd64-consul-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-consul-goss }}
+      bitnami-compat-amd64-consul-cypress: ${{ steps.cypress.outputs.bitnami-compat-amd64-consul-cypress }}
+      bitnami-amd64-contour-goss: ${{ steps.goss.outputs.bitnami-amd64-contour-goss }}
+      bitnami-compat-arm64-contour-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-contour-goss }}
+      bitnami-compat-amd64-contour-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-contour-goss }}
+      bitnami-amd64-discourse-goss: ${{ steps.goss.outputs.bitnami-amd64-discourse-goss }}
+      bitnami-amd64-discourse-cypress: ${{ steps.cypress.outputs.bitnami-amd64-discourse-cypress }}
+      bitnami-compat-arm64-discourse-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-discourse-goss }}
+      bitnami-compat-arm64-discourse-cypress: ${{ steps.cypress.outputs.bitnami-compat-arm64-discourse-cypress }}
+      bitnami-compat-amd64-discourse-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-discourse-goss }}
+      bitnami-compat-amd64-discourse-cypress: ${{ steps.cypress.outputs.bitnami-compat-amd64-discourse-cypress }}
+      bitnami-amd64-elasticsearch-goss: ${{ steps.goss.outputs.bitnami-amd64-elasticsearch-goss }}
+      bitnami-amd64-elasticsearch-cypress: ${{ steps.cypress.outputs.bitnami-amd64-elasticsearch-cypress }}
+      bitnami-compat-arm64-elasticsearch-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-elasticsearch-goss }}
+      bitnami-compat-arm64-elasticsearch-cypress: ${{ steps.cypress.outputs.bitnami-compat-arm64-elasticsearch-cypress }}
+      bitnami-compat-amd64-elasticsearch-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-elasticsearch-goss }}
+      bitnami-compat-amd64-elasticsearch-cypress: ${{ steps.cypress.outputs.bitnami-compat-amd64-elasticsearch-cypress }}
+      bitnami-amd64-etcd-goss: ${{ steps.goss.outputs.bitnami-amd64-etcd-goss }}
+      bitnami-compat-arm64-etcd-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-etcd-goss }}
+      bitnami-compat-amd64-etcd-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-etcd-goss }}
+      bitnami-amd64-external-dns-goss: ${{ steps.goss.outputs.bitnami-amd64-external-dns-goss }}
+      bitnami-compat-arm64-external-dns-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-external-dns-goss }}
+      bitnami-compat-amd64-external-dns-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-external-dns-goss }}
+      bitnami-amd64-fluentd-goss: ${{ steps.goss.outputs.bitnami-amd64-fluentd-goss }}
+      bitnami-compat-arm64-fluentd-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-fluentd-goss }}
+      bitnami-compat-amd64-fluentd-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-fluentd-goss }}
+      bitnami-amd64-kafka-goss: ${{ steps.goss.outputs.bitnami-amd64-kafka-goss }}
+      bitnami-compat-arm64-kafka-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-kafka-goss }}
+      bitnami-compat-amd64-kafka-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-kafka-goss }}
+      bitnami-amd64-keycloak-goss: ${{ steps.goss.outputs.bitnami-amd64-keycloak-goss }}
+      bitnami-amd64-keycloak-cypress: ${{ steps.cypress.outputs.bitnami-amd64-keycloak-cypress }}
+      bitnami-compat-arm64-keycloak-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-keycloak-goss }}
+      bitnami-compat-arm64-keycloak-cypress: ${{ steps.cypress.outputs.bitnami-compat-arm64-keycloak-cypress }}
+      bitnami-compat-amd64-keycloak-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-keycloak-goss }}
+      bitnami-compat-amd64-keycloak-cypress: ${{ steps.cypress.outputs.bitnami-compat-amd64-keycloak-cypress }}
+      bitnami-amd64-mariadb-goss: ${{ steps.goss.outputs.bitnami-amd64-mariadb-goss }}
+      bitnami-compat-arm64-mariadb-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-mariadb-goss }}
+      bitnami-compat-amd64-mariadb-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-mariadb-goss }}
+      bitnami-amd64-mariadb-galera-goss: ${{ steps.goss.outputs.bitnami-amd64-mariadb-galera-goss }}
+      bitnami-compat-arm64-mariadb-galera-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-mariadb-galera-goss }}
+      bitnami-compat-amd64-mariadb-galera-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-mariadb-galera-goss }}
+      bitnami-amd64-memcached-goss: ${{ steps.goss.outputs.bitnami-amd64-memcached-goss }}
+      bitnami-compat-arm64-memcached-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-memcached-goss }}
+      bitnami-compat-amd64-memcached-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-memcached-goss }}
+      bitnami-amd64-minio-goss: ${{ steps.goss.outputs.bitnami-amd64-minio-goss }}
+      bitnami-amd64-minio-cypress: ${{ steps.cypress.outputs.bitnami-amd64-minio-cypress }}
+      bitnami-compat-arm64-minio-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-minio-goss }}
+      bitnami-compat-arm64-minio-cypress: ${{ steps.cypress.outputs.bitnami-compat-arm64-minio-cypress }}
+      bitnami-compat-amd64-minio-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-minio-goss }}
+      bitnami-compat-amd64-minio-cypress: ${{ steps.cypress.outputs.bitnami-compat-amd64-minio-cypress }}
+      bitnami-amd64-mongodb-goss: ${{ steps.goss.outputs.bitnami-amd64-mongodb-goss }}
+      bitnami-compat-arm64-mongodb-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-mongodb-goss }}
+      bitnami-compat-amd64-mongodb-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-mongodb-goss }}
+      bitnami-amd64-mongodb-sharded-goss: ${{ steps.goss.outputs.bitnami-amd64-mongodb-sharded-goss }}
+      bitnami-compat-arm64-mongodb-sharded-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-mongodb-sharded-goss }}
+      bitnami-compat-amd64-mongodb-sharded-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-mongodb-sharded-goss }}
+      bitnami-amd64-mysql-goss: ${{ steps.goss.outputs.bitnami-amd64-mysql-goss }}
+      bitnami-compat-arm64-mysql-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-mysql-goss }}
+      bitnami-compat-amd64-mysql-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-mysql-goss }}
+      bitnami-amd64-nginx-goss: ${{ steps.goss.outputs.bitnami-amd64-nginx-goss }}
+      bitnami-amd64-nginx-cypress: ${{ steps.cypress.outputs.bitnami-amd64-nginx-cypress }}
+      bitnami-compat-arm64-nginx-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-nginx-goss }}
+      bitnami-compat-arm64-nginx-cypress: ${{ steps.cypress.outputs.bitnami-compat-arm64-nginx-cypress }}
+      bitnami-compat-amd64-nginx-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-nginx-goss }}
+      bitnami-compat-amd64-nginx-cypress: ${{ steps.cypress.outputs.bitnami-compat-amd64-nginx-cypress }}
+      bitnami-amd64-postgresql-goss: ${{ steps.goss.outputs.bitnami-amd64-postgresql-goss }}
+      bitnami-compat-arm64-postgresql-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-postgresql-goss }}
+      bitnami-compat-amd64-postgresql-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-postgresql-goss }}
+      bitnami-amd64-rabbitmq-goss: ${{ steps.goss.outputs.bitnami-amd64-rabbitmq-goss }}
+      bitnami-amd64-rabbitmq-cypress: ${{ steps.cypress.outputs.bitnami-amd64-rabbitmq-cypress }}
+      bitnami-compat-arm64-rabbitmq-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-rabbitmq-goss }}
+      bitnami-compat-arm64-rabbitmq-cypress: ${{ steps.cypress.outputs.bitnami-compat-arm64-rabbitmq-cypress }}
+      bitnami-compat-amd64-rabbitmq-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-rabbitmq-goss }}
+      bitnami-compat-amd64-rabbitmq-cypress: ${{ steps.cypress.outputs.bitnami-compat-amd64-rabbitmq-cypress }}
+      bitnami-amd64-rabbitmq-cluster-operator-goss: ${{ steps.goss.outputs.bitnami-amd64-rabbitmq-cluster-operator-goss }}
+      bitnami-amd64-rabbitmq-cluster-operator-cypress: ${{ steps.cypress.outputs.bitnami-amd64-rabbitmq-cluster-operator-cypress }}
+      bitnami-compat-arm64-rabbitmq-cluster-operator-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-rabbitmq-cluster-operator-goss }}
+      bitnami-compat-arm64-rabbitmq-cluster-operator-cypress: ${{ steps.cypress.outputs.bitnami-compat-arm64-rabbitmq-cluster-operator-cypress }}
+      bitnami-compat-amd64-rabbitmq-cluster-operator-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-rabbitmq-cluster-operator-goss }}
+      bitnami-compat-amd64-rabbitmq-cluster-operator-cypress: ${{ steps.cypress.outputs.bitnami-compat-amd64-rabbitmq-cluster-operator-cypress }}
+      bitnami-amd64-redis-goss: ${{ steps.goss.outputs.bitnami-amd64-redis-goss }}
+      bitnami-compat-arm64-redis-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-redis-goss }}
+      bitnami-compat-amd64-redis-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-redis-goss }}
+      bitnami-amd64-redis-cluster-goss: ${{ steps.goss.outputs.bitnami-amd64-redis-cluster-goss }}
+      bitnami-compat-arm64-redis-cluster-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-redis-cluster-goss }}
+      bitnami-compat-amd64-redis-cluster-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-redis-cluster-goss }}
+      bitnami-amd64-sealed-secrets-cypress: ${{ steps.cypress.outputs.bitnami-amd64-sealed-secrets-cypress }}
+      bitnami-compat-arm64-sealed-secrets-cypress: ${{ steps.cypress.outputs.bitnami-compat-arm64-sealed-secrets-cypress }}
+      bitnami-compat-amd64-sealed-secrets-cypress: ${{ steps.cypress.outputs.bitnami-compat-amd64-sealed-secrets-cypress }}
+      bitnami-amd64-solr-goss: ${{ steps.goss.outputs.bitnami-amd64-solr-goss }}
+      bitnami-amd64-solr-cypress: ${{ steps.cypress.outputs.bitnami-amd64-solr-cypress }}
+      bitnami-compat-arm64-solr-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-solr-goss }}
+      bitnami-compat-arm64-solr-cypress: ${{ steps.cypress.outputs.bitnami-compat-arm64-solr-cypress }}
+      bitnami-compat-amd64-solr-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-solr-goss }}
+      bitnami-compat-amd64-solr-cypress: ${{ steps.cypress.outputs.bitnami-compat-amd64-solr-cypress }}
+      bitnami-amd64-tomcat-goss: ${{ steps.goss.outputs.bitnami-amd64-tomcat-goss }}
+      bitnami-amd64-tomcat-cypress: ${{ steps.cypress.outputs.bitnami-amd64-tomcat-cypress }}
+      bitnami-compat-arm64-tomcat-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-tomcat-goss }}
+      bitnami-compat-arm64-tomcat-cypress: ${{ steps.cypress.outputs.bitnami-compat-arm64-tomcat-cypress }}
+      bitnami-compat-amd64-tomcat-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-tomcat-goss }}
+      bitnami-compat-amd64-tomcat-cypress: ${{ steps.cypress.outputs.bitnami-compat-amd64-tomcat-cypress }}
+      bitnami-amd64-wordpress-goss: ${{ steps.goss.outputs.bitnami-amd64-wordpress-goss }}
+      bitnami-amd64-wordpress-cypress: ${{ steps.cypress.outputs.bitnami-amd64-wordpress-cypress }}
+      bitnami-compat-arm64-wordpress-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-wordpress-goss }}
+      bitnami-compat-arm64-wordpress-cypress: ${{ steps.cypress.outputs.bitnami-compat-arm64-wordpress-cypress }}
+      bitnami-compat-amd64-wordpress-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-wordpress-goss }}
+      bitnami-compat-amd64-wordpress-cypress: ${{ steps.cypress.outputs.bitnami-compat-amd64-wordpress-cypress }}
+      bitnami-amd64-zookeeper-goss: ${{ steps.goss.outputs.bitnami-amd64-zookeeper-goss }}
+      bitnami-compat-arm64-zookeeper-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-zookeeper-goss }}
+      bitnami-compat-amd64-zookeeper-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-zookeeper-goss }}
+      bitnami-amd64-apache-goss: ${{ steps.goss.outputs.bitnami-amd64-apache-goss }}
+      bitnami-amd64-apache-cypress: ${{ steps.cypress.outputs.bitnami-amd64-apache-cypress }}
+      bitnami-compat-arm64-apache-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-apache-goss }}
+      bitnami-compat-arm64-apache-cypress: ${{ steps.cypress.outputs.bitnami-compat-arm64-apache-cypress }}
+      bitnami-compat-amd64-apache-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-apache-goss }}
+      bitnami-compat-amd64-apache-cypress: ${{ steps.cypress.outputs.bitnami-compat-amd64-apache-cypress }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -277,6 +403,7 @@ jobs:
           fi
 
       - name: test goss
+        id: goss
         if: always()
         run: |
           export HELM_APP_NAME=${{ matrix.APP_NAME }}
@@ -324,19 +451,40 @@ jobs:
 
             if [ -f ./charts/.vib/${HELM_APP_NAME}/goss/vars.yaml ]
             then
-            kubectl exec -n default $POD_NAME \
-              -- \
-              /tmp/goss -g /tmp/goss.yaml --vars /tmp/vars.yaml v
+              set +e
+              kubectl exec -n default $POD_NAME \
+                -- \
+                /tmp/goss -g /tmp/goss.yaml --vars /tmp/vars.yaml v
+              status=$?
+              set -e
+              if [ $status -eq 0 ]; then
+                echo "${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-goss=success" >> $GITHUB_OUTPUT
+                echo "${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-goss=success"
+              else
+                echo "${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-goss=fail" >> $GITHUB_OUTPUT
+                echo "${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-goss=fail"
+                exit $status
+              fi
               # goss -g /goss_data/${HELM_APP_NAME}/goss/goss.yaml --vars /goss_data/${HELM_APP_NAME}/goss/vars.yaml v
             else
-            kubectl exec -n default $POD_NAME \
-              -- \
-              /tmp/goss -g /tmp/goss.yaml v
+              set +e
+              kubectl exec -n default $POD_NAME \
+                -- \
+                /tmp/goss -g /tmp/goss.yaml v
+              status=$?
+              set -e
+              if [ $status -eq 0 ]; then
+                echo "::set-output name=${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-goss::success"
+              else
+                echo "::set-output name=${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-goss::fail"
+                exit $status
+              fi
               # goss -g /goss_data/${HELM_APP_NAME}/goss/goss.yaml v
             fi
           fi
 
       - name: test cypress
+        id: cypress
         if: always()
         run: |
           export CYPRESS_VERSION=9.7.0
@@ -377,7 +525,18 @@ jobs:
                 echo "${HELM_APP_NAME} cypress"
                 echo "================================================================"
 
+                set +e
                 docker run --rm -v ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress:/e2e -w /e2e cypress/included:${CYPRESS_VERSION} --headless --browser chrome
+                status=$?
+                set -e
+                if [ $status -eq 0 ]; then
+                  echo "${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-cypress=success" >> $GITHUB_OUTPUT
+                  echo "${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-cypress=success"
+                else
+                  echo "${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-cypress=fail" >> $GITHUB_OUTPUT
+                  echo "${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-cypress=fail"
+                  exit $status
+                fi
                 ;;
               arm64) 
                 echo "================================================================"
@@ -405,3 +564,11 @@ jobs:
           k3d cluster delete test-cluster
           docker run --privileged --rm tonistiigi/binfmt --uninstall all
 
+  aggregate-results:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Aggregate results
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: echo "$NEEDS"
