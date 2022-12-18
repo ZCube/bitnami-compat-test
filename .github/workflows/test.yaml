@@ -208,7 +208,7 @@ jobs:
           -v ${PWD}/charts/.vib:/goss_data \
           -p "80:28080@agent:0:direct" \
           -p "443:28443@agent:0:direct" \
-          --agents 4 \
+          --agents 1 \
           --image docker.io/rancher/k3s:v1.25.4-k3s1 \
           --wait
 
@@ -256,7 +256,7 @@ jobs:
             export ENDPOINT=$(cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | jq -r '(.phases.verify.actions[] | select(has("action_id") and .action_id == "cypress")) | .params.endpoint')
             export SVC_PROTOCOL=$(cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | jq -r '(.phases.verify.actions[] | select(has("action_id") and .action_id == "cypress")) | .params.app_protocol' | tr '[:upper:]' '[:lower:]')
             export SVC_AND_PORT_NAME=$(echo $ENDPOINT | sed -E 's/([^-]*)-(.*)/\2/')
-            export SVC_PORT_INFO=$(kubectl get svc -o go-template='{{range $k,$v:=.items}}{{range.spec.ports}}{{if .name}}{{$v.metadata.name}}-{{.name}} {{$v.metadata.name}} {{.name}} {{.port}}{{"\n"}}{{$v.metadata.name}}-{{.port}} {{$v.metadata.name}} {{.name}} {{.port}}{{"\n"}}{{else}}{{$v.metadata.name}}-{{.port}} {{$v.metadata.name}} noname {{.port}}{{"\n"}}{{end}}{{end}}{{end}}' | grep ${SVC_AND_PORT_NAME})
+            export SVC_PORT_INFO=$(kubectl get svc -o go-template='{{range $k,$v:=.items}}{{range.spec.ports}}{{if .name}}{{$v.metadata.name}}-{{.name}} {{$v.metadata.name}} {{.name}} {{.port}}{{"\n"}}{{$v.metadata.name}}-{{.port}} {{$v.metadata.name}} {{.name}} {{.port}}{{"\n"}}{{else}}{{$v.metadata.name}}-{{.port}} {{$v.metadata.name}} noname {{.port}}{{"\n"}}{{end}}{{end}}{{end}}' | grep "${SVC_AND_PORT_NAME} ")
             export SVC_NAME=$(echo ${SVC_PORT_INFO} | awk '{print $2}')
             export SVC_PORT=$(echo ${SVC_PORT_INFO} | awk '{print $4}')
             export SVC_PORT_NUM=$(echo ${SVC_PORT_INFO} | awk '{print $4}')
@@ -377,6 +377,24 @@ jobs:
           kubectl get ingress
           kubectl get pv
           kubectl get pvc
+          
+          kubectl get deploy --output name | \
+            xargs -n1 -t \
+              kubectl rollout status --timeout 180s || true &
+
+          kubectl get ds --output name | \
+            xargs -n1 -t \
+              kubectl rollout status --timeout 180s || true &
+
+          kubectl get sts --output name | \
+            xargs -n1 -t \
+              kubectl rollout status --timeout 180s || true &
+          
+          kubectl get rs --output name | \
+            xargs -n1 -t \
+              kubectl rollout status --timeout 180s || true &
+          
+          wait
 
           if [ -f ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml ]
           then
@@ -501,7 +519,7 @@ jobs:
             export ENDPOINT=$(cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | jq -r '(.phases.verify.actions[] | select(has("action_id") and .action_id == "cypress")) | .params.endpoint')
             export SVC_PROTOCOL=$(cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | jq -r '(.phases.verify.actions[] | select(has("action_id") and .action_id == "cypress")) | .params.app_protocol' | tr '[:upper:]' '[:lower:]')
             export SVC_AND_PORT_NAME=$(echo $ENDPOINT | sed -E 's/([^-]*)-(.*)/\2/')
-            export SVC_PORT_INFO=$(kubectl get svc -o go-template='{{range $k,$v:=.items}}{{range.spec.ports}}{{if .name}}{{$v.metadata.name}}-{{.name}} {{$v.metadata.name}} {{.name}} {{.port}}{{"\n"}}{{$v.metadata.name}}-{{.port}} {{$v.metadata.name}} {{.name}} {{.port}}{{"\n"}}{{else}}{{$v.metadata.name}}-{{.port}} {{$v.metadata.name}} noname {{.port}}{{"\n"}}{{end}}{{end}}{{end}}' | grep ${SVC_AND_PORT_NAME})
+            export SVC_PORT_INFO=$(kubectl get svc -o go-template='{{range $k,$v:=.items}}{{range.spec.ports}}{{if .name}}{{$v.metadata.name}}-{{.name}} {{$v.metadata.name}} {{.name}} {{.port}}{{"\n"}}{{$v.metadata.name}}-{{.port}} {{$v.metadata.name}} {{.name}} {{.port}}{{"\n"}}{{else}}{{$v.metadata.name}}-{{.port}} {{$v.metadata.name}} noname {{.port}}{{"\n"}}{{end}}{{end}}{{end}}' | grep "${SVC_AND_PORT_NAME} ")
             export SVC_NAME=$(echo ${SVC_PORT_INFO} | awk '{print $2}')
             export SVC_PORT=$(echo ${SVC_PORT_INFO} | awk '{print $4}')
             export SVC_PORT_NUM=$(echo ${SVC_PORT_INFO} | awk '{print $4}')
