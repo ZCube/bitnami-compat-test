@@ -160,57 +160,107 @@ jobs:
 
       - name: install helm
         run: |
-          curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
-          chmod 700 get_helm.sh
-          ./get_helm.sh
+          if ! hash helm 2>/dev/null
+          then
+            curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+            chmod 700 get_helm.sh
+            ./get_helm.sh
+          fi
           
           helm repo add bitnami https://charts.bitnami.com/bitnami
 
       - name: install kubectl
         run: |
-          curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/$(dpkg --print-architecture)/kubectl
-          chmod +x ./kubectl
-          sudo mv ./kubectl /usr/local/bin/kubectl
+          architecture=""
+          case $(uname -m) in
+            x86_64)  architecture="amd64" ;;
+            aarch64) architecture="arm64" ;;
+          esac
+          echo ${architecture}
+
+          if ! hash kubectl 2>/dev/null
+          then
+            curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/${architecture}/kubectl
+            chmod +x ./kubectl
+            sudo mv ./kubectl /usr/local/bin/kubectl
+          fi
 
       - name: install yq
         run: |
-          export VERSION=v4.30.5
-          export BINARY=yq_linux_$(dpkg --print-architecture)
-          wget https://github.com/mikefarah/yq/releases/download/${VERSION}/${BINARY}.tar.gz -O - | tar xz
-          sudo mv ${BINARY} /usr/local/bin/yq
+          architecture=""
+          case $(uname -m) in
+            x86_64)  architecture="amd64" ;;
+            aarch64) architecture="arm64" ;;
+          esac
+          echo ${architecture}
 
-      - name: install jq, binfmt-support
+          if ! hash yq 2>/dev/null
+          then
+            export VERSION=v4.30.5
+            export BINARY=yq_linux_${architecture}
+            wget https://github.com/mikefarah/yq/releases/download/${VERSION}/${BINARY}.tar.gz -O - | tar xz
+            sudo mv ${BINARY} /usr/local/bin/yq
+          fi
+
+      - name: install jq
         run: |
-          sudo apt update
-          sudo apt install -y jq binfmt-support
+          if ! hash jq 2>/dev/null
+          then
+            sudo apt update
+            sudo apt install -y jq
+          fi
 
       - name: install goss
         run: |
-          export GOSS_VER=v0.3.20
-          curl -fsSL https://goss.rocks/install | GOSS_DST=/usr/local/bin sudo sh
+          if ! hash goss 2>/dev/null
+          then
+            export GOSS_VER=v0.3.20
+            curl -fsSL https://goss.rocks/install | GOSS_DST=/usr/local/bin sudo sh
+          fi
 
       - name: install k3d
         run: |
-          wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.4.6 bash
+          if ! hash k3d 2>/dev/null
+          then
+            wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.4.6 bash
+          fi
           
       - name: install mustache mo
         run: |
-          curl -sSL https://git.io/get-mo -o mo
-          chmod +x mo
-          sudo mv mo /usr/local/bin/
+          if ! hash mo 2>/dev/null
+          then
+            curl -sSL https://git.io/get-mo -o mo
+            chmod +x mo
+            sudo mv mo /usr/local/bin/
+          fi
 
       - name: prepare k3s cluster by k3d
         run: |
           k3d cluster stop test-cluster || true
           k3d cluster delete test-cluster || true
-          k3d cluster create test-cluster \
-          -v /usr/local/bin/goss:/bin/goss:ro \
-          -v ${PWD}/charts/.vib:/goss_data \
-          -p "80:28080@agent:0:direct" \
-          -p "443:28443@agent:0:direct" \
-          --agents 1 \
-          --image docker.io/rancher/k3s:v1.25.4-k3s1 \
-          --wait
+          
+          
+          if [ -f /etc/registries.yaml ]
+          then
+            k3d cluster create test-cluster \
+            -v /usr/local/bin/goss:/bin/goss:ro \
+            -v ${PWD}/charts/.vib:/goss_data \
+            -p "80:28080@agent:0:direct" \
+            -p "443:28443@agent:0:direct" \
+            --agents 1 \
+            --image docker.io/rancher/k3s:v1.25.4-k3s1 \
+            --registry-config "/etc/registries.yaml" \
+            --wait
+          else
+            k3d cluster create test-cluster \
+            -v /usr/local/bin/goss:/bin/goss:ro \
+            -v ${PWD}/charts/.vib:/goss_data \
+            -p "80:28080@agent:0:direct" \
+            -p "443:28443@agent:0:direct" \
+            --agents 1 \
+            --image docker.io/rancher/k3s:v1.25.4-k3s1 \
+            --wait
+          fi
 
           kubectl taint nodes  -l node-role.kubernetes.io/master=true         node-role.kubernetes.io=master:NoSchedule   --overwrite=true
           kubectl taint nodes  -l node-role.kubernetes.io/control-plane=true  node-role.kubernetes.io=control-plane:NoSchedule   --overwrite=true
@@ -223,28 +273,63 @@ jobs:
           export HELM_APP_NAME=${{ matrix.APP_NAME }}
           export HELM_RELEASE_NAME=test
           export USE_IMAGE_TYPE=${{ matrix.USE_IMAGE_TYPE }}
+          architecture=""
+          case $(uname -m) in
+            x86_64)  architecture="amd64" ;;
+            aarch64) architecture="arm64" ;;
+          esac
+          echo ${architecture}
 
-          cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | jq -r .phases.verify.context.runtime_parameters | base64 -d > values_bitnami.yaml
+          cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | jq -r .phases.verify.context.runtime_parameters | base64 -d | sed -E "s/amd64/${architecture}/g" > values_bitnami.yaml
 
           case "${USE_IMAGE_TYPE}" in
             bitnami) 
               helm upgrade -i ${HELM_RELEASE_NAME} bitnami/${HELM_APP_NAME} \
                 -f values_bitnami.yaml \
                 --set fullnameOverride=${HELM_APP_NAME} \
-                --wait --timeout 300s
+                --wait --timeout 600s
               ;;
             bitnami-compat) 
               helm upgrade -i ${HELM_RELEASE_NAME} bitnami/${HELM_APP_NAME} \
                 -f values_bitnami.yaml \
                 -f bitnami-compat/values/values_bitnami_compat_${HELM_APP_NAME}.yaml \
                 --set fullnameOverride=${HELM_APP_NAME} \
-                --wait --timeout 300s
+                --wait --timeout 600s
               ;;
           esac;
 
       - name: pull cypress
         if: always()
         run: |
+          architecture=""
+          case $(uname -m) in
+            x86_64)  architecture="amd64" ;;
+            aarch64) architecture="arm64" ;;
+          esac
+          echo ${architecture}
+          
+          kubectl get deploy -n kube-system --output name | \
+            xargs -n1 -t \
+              kubectl rollout status -n kube-system --timeout 180s || true &
+
+          kubectl get ds -n kube-system --output name | \
+            xargs -n1 -t \
+              kubectl rollout status -n kube-system --timeout 180s || true &
+
+          kubectl get sts -n kube-system --output name | \
+            xargs -n1 -t \
+              kubectl rollout status -n kube-system --timeout 180s || true &
+          
+          kubectl get rs -n kube-system --output name | \
+            xargs -n1 -t \
+              kubectl rollout status -n kube-system --timeout 180s || true &
+          
+          kubectl get job -n kube-system --output name | \
+            xargs -n1 -t \
+               kubectl wait --for=condition=Complete -n kube-system --timeout 180s || true &
+          
+          wait
+
           export CYPRESS_VERSION=9.7.0
 
           export HELM_APP_NAME=${{ matrix.APP_NAME }}
@@ -353,13 +438,19 @@ jobs:
             esac;
 
             # cypress v9 amd64 only
-            dpkgArch="$(dpkg --print-architecture)"; dpkgArch="${dpkgArch##*-}";
-            case "$dpkgArch" in
+            architecture=""
+            case $(uname -m) in
+              x86_64)  architecture="amd64" ;;
+              aarch64) architecture="arm64" ;;
+            esac
+            echo ${architecture}
+
+            case "$architecture" in
               amd64) 
                 docker pull cypress/included:${CYPRESS_VERSION}
                 ;;
               arm64) 
-                # docker pull cypress/included:${CYPRESS_VERSION}
+                docker pull --platform linux/amd64 cypress/included:${CYPRESS_VERSION}
                 ;;
             esac;
           fi
@@ -420,11 +511,26 @@ jobs:
             # pod describe
             kubectl describe pod -n default ${POD_NAME}
           fi
+          
+          # pod list
+          kubectl get pods
+          kubectl get svc
+          kubectl get ingress
+          kubectl get pv
+          kubectl get pvc
+          
 
       - name: test goss
         id: goss
         if: always()
         run: |
+          architecture=""
+          case $(uname -m) in
+            x86_64)  architecture="amd64" ;;
+            aarch64) architecture="arm64" ;;
+          esac
+          echo ${architecture}
+
           export HELM_APP_NAME=${{ matrix.APP_NAME }}
           export HELM_RELEASE_NAME=test
           export USE_IMAGE_TYPE=${{ matrix.USE_IMAGE_TYPE }}
@@ -477,11 +583,11 @@ jobs:
               status=$?
               set -e
               if [ $status -eq 0 ]; then
-                echo "${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-goss=success" >> $GITHUB_OUTPUT
-                echo "${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-goss=success"
+                echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-goss=success" >> $GITHUB_OUTPUT
+                echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-goss=success"
               else
-                echo "${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-goss=fail" >> $GITHUB_OUTPUT
-                echo "${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-goss=fail"
+                echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-goss=fail" >> $GITHUB_OUTPUT
+                echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-goss=fail"
                 exit $status
               fi
               # goss -g /goss_data/${HELM_APP_NAME}/goss/goss.yaml --vars /goss_data/${HELM_APP_NAME}/goss/vars.yaml v
@@ -493,11 +599,11 @@ jobs:
               status=$?
               set -e
               if [ $status -eq 0 ]; then
-                echo "${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-goss=success" >> $GITHUB_OUTPUT
-                echo "${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-goss=success"
+                echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-goss=success" >> $GITHUB_OUTPUT
+                echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-goss=success"
               else
-                echo "${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-goss=fail" >> $GITHUB_OUTPUT
-                echo "${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-goss=fail"
+                echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-goss=fail" >> $GITHUB_OUTPUT
+                echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-goss=fail"
                 exit $status
               fi
               # goss -g /goss_data/${HELM_APP_NAME}/goss/goss.yaml v
@@ -508,6 +614,13 @@ jobs:
         id: cypress
         if: always()
         run: |
+          architecture=""
+          case $(uname -m) in
+            x86_64)  architecture="amd64" ;;
+            aarch64) architecture="arm64" ;;
+          esac
+          echo ${architecture}
+          
           export CYPRESS_VERSION=9.7.0
 
           export HELM_APP_NAME=${{ matrix.APP_NAME }}
@@ -539,8 +652,7 @@ jobs:
             cp ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress/cypress.json_ ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress/cypress.json
 
             # cypress v9 amd64 only
-            dpkgArch="$(dpkg --print-architecture)"; dpkgArch="${dpkgArch##*-}";
-            case "$dpkgArch" in
+            case "$architecture" in
               amd64) 
                 echo "================================================================"
                 echo "${HELM_APP_NAME} cypress"
@@ -551,11 +663,11 @@ jobs:
                 status=$?
                 set -e
                 if [ $status -eq 0 ]; then
-                  echo "${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-cypress=success" >> $GITHUB_OUTPUT
-                  echo "${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-cypress=success"
+                  echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-cypress=success" >> $GITHUB_OUTPUT
+                  echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-cypress=success"
                 else
-                  echo "${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-cypress=fail" >> $GITHUB_OUTPUT
-                  echo "${{ matrix.USE_IMAGE_TYPE }}-$(dpkg --print-architecture)-${{ matrix.APP_NAME }}-cypress=fail"
+                  echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-cypress=fail" >> $GITHUB_OUTPUT
+                  echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-cypress=fail"
                   exit $status
                 fi
                 ;;
@@ -564,8 +676,22 @@ jobs:
                 echo "${HELM_APP_NAME} cypress"
                 echo "================================================================"
                 
-                # docker run --privileged --rm tonistiigi/binfmt --install all
-                # docker run --rm -v ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress:/e2e -w /e2e cypress/included:${CYPRESS_VERSION} --headless --browser chrome
+                ssh ubuntu@cypress-test '/bin/bash -c "rm -rf /tmp/cypress-test ; mkdir -p /tmp/cypress-test"'
+                ssh ubuntu@cypress-test "docker run --rm -v /tmp:/e2e -w /e2e ubuntu rm -rf /e2e/cypress-test"
+                rsync -avzh --delete ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress/ ubuntu@cypress-test:/tmp/cypress-test/
+                set +e
+                ssh ubuntu@cypress-test "docker run --platform linux/amd64 --rm -v /tmp/cypress-test:/e2e -w /e2e cypress/included:${CYPRESS_VERSION} --headless --browser chrome"
+                status=$?
+                set -e
+                if [ $status -eq 0 ]; then
+                  echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-cypress=success" >> $GITHUB_OUTPUT
+                  echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-cypress=success"
+                else
+                  echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-cypress=fail" >> $GITHUB_OUTPUT
+                  echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-cypress=fail"
+                  exit $status
+                fi
+                ssh ubuntu@cypress-test '/bin/bash -c "rm -rf /tmp/cypress-test ; mkdir -p /tmp/cypress-test"'
                 ;;
             esac;
 
