@@ -239,6 +239,7 @@ jobs:
           k3d cluster stop test-cluster || true
           k3d cluster delete test-cluster || true
           
+          docker volume rm k3d-test-cluster-images || true
           
           if [ -f /etc/registries.yaml ]
           then
@@ -247,6 +248,7 @@ jobs:
             -v ${PWD}/charts/.vib:/goss_data \
             -p "80:28080@agent:0:direct" \
             -p "443:28443@agent:0:direct" \
+            --k3s-arg "--disable=local-storage@server:*" \
             --agents 1 \
             --image docker.io/rancher/k3s:v1.25.4-k3s1 \
             --registry-config "/etc/registries.yaml" \
@@ -257,15 +259,17 @@ jobs:
             -v ${PWD}/charts/.vib:/goss_data \
             -p "80:28080@agent:0:direct" \
             -p "443:28443@agent:0:direct" \
+            --k3s-arg "--disable=local-storage@server:*" \
             --agents 1 \
             --image docker.io/rancher/k3s:v1.25.4-k3s1 \
             --wait
           fi
 
+          kubectl kustomize --enable-helm localpv | kubectl apply -f -
+
           kubectl taint nodes  -l node-role.kubernetes.io/master=true         node-role.kubernetes.io=master:NoSchedule   --overwrite=true
           kubectl taint nodes  -l node-role.kubernetes.io/control-plane=true  node-role.kubernetes.io=control-plane:NoSchedule   --overwrite=true
           
-          kubectl apply -f local_path_config.yaml
           kubectl apply -f traefik_config.yaml
 
       - name: execute
@@ -286,12 +290,14 @@ jobs:
             bitnami) 
               helm upgrade -i ${HELM_RELEASE_NAME} bitnami/${HELM_APP_NAME} \
                 -f values_bitnami.yaml \
+                -f values_debug.yaml \
                 --set fullnameOverride=${HELM_APP_NAME} \
                 --wait --timeout 600s
               ;;
             bitnami-compat) 
               helm upgrade -i ${HELM_RELEASE_NAME} bitnami/${HELM_APP_NAME} \
                 -f values_bitnami.yaml \
+                -f values_debug.yaml \
                 -f bitnami-compat/values/values_bitnami_compat_${HELM_APP_NAME}.yaml \
                 --set fullnameOverride=${HELM_APP_NAME} \
                 --wait --timeout 600s
@@ -558,7 +564,11 @@ jobs:
             echo "================================================================"
 
             echo Testing with pod: $POD_NAME
-            
+
+            echo permission 2775 -> 2777
+            cat ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml | sed -E "s/2775/2777/g" > ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml_
+            cp ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml_ ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml
+
             # kubectl cp /usr/local/bin/goss $POD_NAME:/tmp/goss
             # kubectl cp ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml $POD_NAME:/tmp/goss.yaml
             # if [ -f ./charts/.vib/${HELM_APP_NAME}/goss/vars.yaml ]
