@@ -1,2 +1,8 @@
 image:
   debug: true
+
+envoy:
+  service:
+    ports:
+      http: 81
+

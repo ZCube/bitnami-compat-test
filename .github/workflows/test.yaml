@@ -16,7 +16,7 @@ jobs:
       matrix:
         os: ["ubuntu-latest", "ARM64"]
         USE_IMAGE_TYPE: ["bitnami", "bitnami-compat"]
-        APP_NAME: ["cert-manager", "consul", "contour", "contour-operator", "discourse", "elasticsearch", "etcd", "external-dns", "fluentd", "kafka", "keycloak", "mariadb", "mariadb-galera", "memcached", "minio", "mongodb", "mongodb-sharded", "mysql", "nginx", "node", "postgresql", "postgresql-ha", "rabbitmq", "rabbitmq-cluster-operator", "redis", "redis-cluster", "sealed-secrets", "solr", "thanos", "tomcat", "wordpress", "zookeeper", "apache"]
+        APP_NAME: ["cert-manager", "consul", "contour", "contour-operator", "discourse", "elasticsearch", "etcd", "external-dns", "fluentd", "gitea", "kafka", "keycloak", "mariadb", "mariadb-galera", "memcached", "minio", "mongodb", "mongodb-sharded", "mysql", "nginx", "node", "postgresql", "postgresql-ha", "rabbitmq", "rabbitmq-cluster-operator", "redis", "redis-cluster", "sealed-secrets", "solr", "thanos", "tomcat", "wordpress", "zookeeper"]
         exclude:
           - os: "ARM64"
             USE_IMAGE_TYPE: "bitnami"
@@ -55,6 +55,12 @@ jobs:
       bitnami-amd64-fluentd-goss: ${{ steps.goss.outputs.bitnami-amd64-fluentd-goss }}
       bitnami-compat-arm64-fluentd-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-fluentd-goss }}
       bitnami-compat-amd64-fluentd-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-fluentd-goss }}
+      bitnami-amd64-gitea-goss: ${{ steps.goss.outputs.bitnami-amd64-gitea-goss }}
+      bitnami-amd64-gitea-cypress: ${{ steps.cypress.outputs.bitnami-amd64-gitea-cypress }}
+      bitnami-compat-arm64-gitea-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-gitea-goss }}
+      bitnami-compat-arm64-gitea-cypress: ${{ steps.cypress.outputs.bitnami-compat-arm64-gitea-cypress }}
+      bitnami-compat-amd64-gitea-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-gitea-goss }}
+      bitnami-compat-amd64-gitea-cypress: ${{ steps.cypress.outputs.bitnami-compat-amd64-gitea-cypress }}
       bitnami-amd64-kafka-goss: ${{ steps.goss.outputs.bitnami-amd64-kafka-goss }}
       bitnami-compat-arm64-kafka-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-kafka-goss }}
       bitnami-compat-amd64-kafka-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-kafka-goss }}
@@ -139,12 +145,6 @@ jobs:
       bitnami-amd64-zookeeper-goss: ${{ steps.goss.outputs.bitnami-amd64-zookeeper-goss }}
       bitnami-compat-arm64-zookeeper-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-zookeeper-goss }}
       bitnami-compat-amd64-zookeeper-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-zookeeper-goss }}
-      bitnami-amd64-apache-goss: ${{ steps.goss.outputs.bitnami-amd64-apache-goss }}
-      bitnami-amd64-apache-cypress: ${{ steps.cypress.outputs.bitnami-amd64-apache-cypress }}
-      bitnami-compat-arm64-apache-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-apache-goss }}
-      bitnami-compat-arm64-apache-cypress: ${{ steps.cypress.outputs.bitnami-compat-arm64-apache-cypress }}
-      bitnami-compat-amd64-apache-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-apache-goss }}
-      bitnami-compat-amd64-apache-cypress: ${{ steps.cypress.outputs.bitnami-compat-amd64-apache-cypress }}
 
     steps:
       - name: Checkout
@@ -240,12 +240,16 @@ jobs:
           k3d cluster delete test-cluster || true
           
           docker volume rm k3d-test-cluster-images || true
-          
+          sudo mkdir -p containers
+          sudo chmod 0701 containers
+          sudo chown root:root containers
+
           if [ -f /etc/registries.yaml ]
           then
             k3d cluster create test-cluster \
             -v /usr/local/bin/goss:/bin/goss:ro \
             -v ${PWD}/charts/.vib:/goss_data \
+            -v ${PWD}/containers:/var/lib/docker/containers \
             -p "80:28080@agent:0:direct" \
             -p "443:28443@agent:0:direct" \
             --k3s-arg "--disable=local-storage@server:*" \
@@ -257,6 +261,7 @@ jobs:
             k3d cluster create test-cluster \
             -v /usr/local/bin/goss:/bin/goss:ro \
             -v ${PWD}/charts/.vib:/goss_data \
+            -v ${PWD}/containers:/var/lib/docker/containers \
             -p "80:28080@agent:0:direct" \
             -p "443:28443@agent:0:direct" \
             --k3s-arg "--disable=local-storage@server:*" \
@@ -275,7 +280,7 @@ jobs:
       - name: execute
         run: |
           export HELM_APP_NAME=${{ matrix.APP_NAME }}
-          export HELM_RELEASE_NAME=test
+          export HELM_RELEASE_NAME=${{ matrix.APP_NAME }}
           export USE_IMAGE_TYPE=${{ matrix.USE_IMAGE_TYPE }}
           architecture=""
           case $(uname -m) in
@@ -339,7 +344,7 @@ jobs:
           export CYPRESS_VERSION=9.7.0
 
           export HELM_APP_NAME=${{ matrix.APP_NAME }}
-          export HELM_RELEASE_NAME=test
+          export HELM_RELEASE_NAME=${{ matrix.APP_NAME }}
           export USE_IMAGE_TYPE=${{ matrix.USE_IMAGE_TYPE }}
 
           if [ -f ./charts/.vib/${HELM_APP_NAME}/cypress/cypress.json ]
@@ -451,21 +456,22 @@ jobs:
             esac
             echo ${architecture}
 
+            sleep 120 &
             case "$architecture" in
               amd64) 
-                docker pull cypress/included:${CYPRESS_VERSION}
+                docker pull cypress/included:${CYPRESS_VERSION} &
                 ;;
               arm64) 
-                docker pull --platform linux/amd64 cypress/included:${CYPRESS_VERSION}
                 ;;
             esac;
+            wait
           fi
 
       - name: dump pod info
         if: always()
         run: |
           export HELM_APP_NAME=${{ matrix.APP_NAME }}
-          export HELM_RELEASE_NAME=test
+          export HELM_RELEASE_NAME=${{ matrix.APP_NAME }}
           export USE_IMAGE_TYPE=${{ matrix.USE_IMAGE_TYPE }}
 
           # pod list
@@ -538,7 +544,7 @@ jobs:
           echo ${architecture}
 
           export HELM_APP_NAME=${{ matrix.APP_NAME }}
-          export HELM_RELEASE_NAME=test
+          export HELM_RELEASE_NAME=${{ matrix.APP_NAME }}
           export USE_IMAGE_TYPE=${{ matrix.USE_IMAGE_TYPE }}
 
           if [ -f ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml ]
@@ -634,7 +640,7 @@ jobs:
           export CYPRESS_VERSION=9.7.0
 
           export HELM_APP_NAME=${{ matrix.APP_NAME }}
-          export HELM_RELEASE_NAME=test
+          export HELM_RELEASE_NAME=${{ matrix.APP_NAME }}
           export USE_IMAGE_TYPE=${{ matrix.USE_IMAGE_TYPE }}
 
           if [ -f ./charts/.vib/${HELM_APP_NAME}/cypress/cypress.json ]
