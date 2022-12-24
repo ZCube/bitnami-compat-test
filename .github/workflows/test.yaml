@@ -103,6 +103,9 @@ jobs:
       bitnami-amd64-postgresql-goss: ${{ steps.goss.outputs.bitnami-amd64-postgresql-goss }}
       bitnami-compat-arm64-postgresql-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-postgresql-goss }}
       bitnami-compat-amd64-postgresql-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-postgresql-goss }}
+      bitnami-amd64-postgresql-ha-goss: ${{ steps.goss.outputs.bitnami-amd64-postgresql-ha-goss }}
+      bitnami-compat-arm64-postgresql-ha-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-postgresql-ha-goss }}
+      bitnami-compat-amd64-postgresql-ha-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-postgresql-ha-goss }}
       bitnami-amd64-rabbitmq-goss: ${{ steps.goss.outputs.bitnami-amd64-rabbitmq-goss }}
       bitnami-amd64-rabbitmq-cypress: ${{ steps.cypress.outputs.bitnami-amd64-rabbitmq-cypress }}
       bitnami-compat-arm64-rabbitmq-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-rabbitmq-goss }}
@@ -289,7 +292,14 @@ jobs:
           esac
           echo ${architecture}
 
-          cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | jq -r .phases.verify.context.runtime_parameters | base64 -d | sed -E "s/amd64/${architecture}/g" > values_bitnami.yaml
+
+          if [ -f ./charts/.vib/${HELM_APP_NAME}/vib-publish.json ]
+          then
+            cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | jq -r .phases.verify.context.runtime_parameters | base64 -d | sed -E "s/amd64/${architecture}/g" > values_bitnami.yaml
+          else
+            rm values_bitnami.yaml || true
+            touch values_bitnami.yaml
+          fi
 
           case "${USE_IMAGE_TYPE}" in
             bitnami) 
@@ -346,6 +356,8 @@ jobs:
           export HELM_APP_NAME=${{ matrix.APP_NAME }}
           export HELM_RELEASE_NAME=${{ matrix.APP_NAME }}
           export USE_IMAGE_TYPE=${{ matrix.USE_IMAGE_TYPE }}
+
+          sleep 120 &
 
           if [ -f ./charts/.vib/${HELM_APP_NAME}/cypress/cypress.json ]
           then
@@ -456,7 +468,6 @@ jobs:
             esac
             echo ${architecture}
 
-            sleep 120 &
             case "$architecture" in
               amd64) 
                 docker pull cypress/included:${CYPRESS_VERSION} &
@@ -464,8 +475,8 @@ jobs:
               arm64) 
                 ;;
             esac;
-            wait
           fi
+          wait
 
       - name: dump pod info
         if: always()
@@ -481,6 +492,8 @@ jobs:
           kubectl get pv
           kubectl get pvc
           
+          docker exec -i k3d-test-cluster-agent-0 crictl images --digests
+
           kubectl get deploy --output name | \
             xargs -n1 -t \
               kubectl rollout status --timeout 180s || true &
@@ -499,15 +512,16 @@ jobs:
           
           wait
 
-          if [ -f ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml ]
-          then
-            export POD_TYPE=$(cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | jq -r '(.phases.verify.actions[] | select(has("action_id") and .action_id == "goss")) | .params.remote.workload' | cut -d '-' -f1)
-            export POD_NAME=$(cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | jq -r '(.phases.verify.actions[] | select(has("action_id") and .action_id == "goss")) | .params.remote.workload' | cut -d '-' -f2-)
-
+          declare -a GOSS_ACTIONS=( $(cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | yq e -o=j -I=0 '(.phases.verify.actions[] | select(has("action_id") and .action_id == "goss")) | .') )
+          for json in "${GOSS_ACTIONS[@]}" ; do
+            echo $json
+          
+            export POD_TYPE=$(echo $json | yq -r '.params.remote.workload' | cut -d '-' -f1)
+            export POD_NAME=$(echo $json | yq -r '.params.remote.workload' | cut -d '-' -f2-)
             case "${POD_TYPE}" in
-              pod) 
+              pod)
                 ;;
-              *) 
+              *)
                 export OWNER_UID=$(kubectl get ${POD_TYPE} ${POD_NAME} -o jsonpath='{.metadata.uid}')
                 export REPLICA_NAME=$(kubectl get rs -o go-template='{{range .items}}{{.metadata.name}} {{if .metadata.ownerReferences}}{{range .metadata.ownerReferences}} {{.uid}} {{end}}{{end}} {{"\n"}}{{end}}' | grep $OWNER_UID | head -n 1 | awk '{print $1}')
                 if [ ! -z ${REPLICA_NAME} ]; then
@@ -516,13 +530,16 @@ jobs:
                 export POD_NAME=$(kubectl get pods -o go-template='{{range .items}}{{.metadata.name}} {{if .metadata.ownerReferences}}{{range .metadata.ownerReferences}} {{.uid}} {{end}}{{end}} {{"\n"}}{{end}}' | grep $OWNER_UID | head -n 1 | awk '{print $1}')
                 ;;
             esac;
-
+          
+            echo Testing with pod: $POD_NAME
+            
             # pod logs
             kubectl logs -n default ${POD_NAME}
 
             # pod describe
             kubectl describe pod -n default ${POD_NAME}
-          fi
+
+          done
           
           # pod list
           kubectl get pods
@@ -530,6 +547,8 @@ jobs:
           kubectl get ingress
           kubectl get pv
           kubectl get pvc
+
+          docker exec -i k3d-test-cluster-agent-0 crictl images --digests
           
 
       - name: test goss
@@ -547,15 +566,22 @@ jobs:
           export HELM_RELEASE_NAME=${{ matrix.APP_NAME }}
           export USE_IMAGE_TYPE=${{ matrix.USE_IMAGE_TYPE }}
 
-          if [ -f ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml ]
-          then
-            export POD_TYPE=$(cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | jq -r '(.phases.verify.actions[] | select(has("action_id") and .action_id == "goss")) | .params.remote.workload' | cut -d '-' -f1)
-            export POD_NAME=$(cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | jq -r '(.phases.verify.actions[] | select(has("action_id") and .action_id == "goss")) | .params.remote.workload' | cut -d '-' -f2-)
 
+          echo "================================================================"
+          echo "${HELM_APP_NAME} goss"
+          echo "================================================================"
+          
+          export status=0
+          declare -a GOSS_ACTIONS=( $(cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | yq e -o=j -I=0 '(.phases.verify.actions[] | select(has("action_id") and .action_id == "goss")) | .') )
+          for json in "${GOSS_ACTIONS[@]}" ; do
+            echo $json
+          
+            export POD_TYPE=$(echo $json | yq -r '.params.remote.workload' | cut -d '-' -f1)
+            export POD_NAME=$(echo $json | yq -r '.params.remote.workload' | cut -d '-' -f2-)
             case "${POD_TYPE}" in
-              pod) 
+              pod)
                 ;;
-              *) 
+              *)
                 export OWNER_UID=$(kubectl get ${POD_TYPE} ${POD_NAME} -o jsonpath='{.metadata.uid}')
                 export REPLICA_NAME=$(kubectl get rs -o go-template='{{range .items}}{{.metadata.name}} {{if .metadata.ownerReferences}}{{range .metadata.ownerReferences}} {{.uid}} {{end}}{{end}} {{"\n"}}{{end}}' | grep $OWNER_UID | head -n 1 | awk '{print $1}')
                 if [ ! -z ${REPLICA_NAME} ]; then
@@ -564,65 +590,55 @@ jobs:
                 export POD_NAME=$(kubectl get pods -o go-template='{{range .items}}{{.metadata.name}} {{if .metadata.ownerReferences}}{{range .metadata.ownerReferences}} {{.uid}} {{end}}{{end}} {{"\n"}}{{end}}' | grep $OWNER_UID | head -n 1 | awk '{print $1}')
                 ;;
             esac;
-
-            echo "================================================================"
-            echo "${HELM_APP_NAME} goss"
-            echo "================================================================"
-
+          
             echo Testing with pod: $POD_NAME
-
-            echo permission 2775 -> 2777
-            cat ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml | sed -E "s/2775/2777/g" > ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml_
-            cp ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml_ ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml
-
-            # kubectl cp /usr/local/bin/goss $POD_NAME:/tmp/goss
-            # kubectl cp ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml $POD_NAME:/tmp/goss.yaml
-            # if [ -f ./charts/.vib/${HELM_APP_NAME}/goss/vars.yaml ]
-            # then
-            #   kubectl cp ./charts/.vib/${HELM_APP_NAME}/goss/vars.yaml $POD_NAME:/tmp/vars.yaml
-            # fi
             
             cat /usr/local/bin/goss | kubectl exec -i -n default $POD_NAME "--" sh -c "cat > /tmp/goss"
             kubectl exec -i -n default $POD_NAME "--" sh -c "chmod +x /tmp/goss"
-            cat ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml | kubectl exec -i -n default $POD_NAME "--" sh -c "cat > /tmp/goss.yaml"
-            if [ -f ./charts/.vib/${HELM_APP_NAME}/goss/vars.yaml ]
+          
+            export GOSS_PATH=./charts$(echo $json | yq -r '.params.resources.path')/goss.yaml
+            export GOSS_VAR_PATH=./charts$(echo $json | yq -r '.params.resources.path')/$(echo $json | yq -r '.params.vars_file')
+          
+            echo permission 2775 -> 2777
+            cat ${GOSS_PATH} | sed -E "s/2775/2777/g" > ${GOSS_PATH}_
+          
+          
+            cat ${GOSS_PATH}_ | kubectl exec -i -n default $POD_NAME "--" sh -c "cat > /tmp/goss.yaml"
+            if [ -f ${GOSS_VAR_PATH} ]
             then
-              cat ./charts/.vib/${HELM_APP_NAME}/goss/vars.yaml | kubectl exec -i -n default $POD_NAME "--" sh -c "cat > /tmp/vars.yaml"
+              cat ${GOSS_VAR_PATH} | kubectl exec -i -n default $POD_NAME "--" sh -c "cat > /tmp/vars.yaml"
             fi
-
-            if [ -f ./charts/.vib/${HELM_APP_NAME}/goss/vars.yaml ]
+          
+            if [ -f ${GOSS_VAR_PATH} ]
             then
               set +e
               kubectl exec -n default $POD_NAME \
                 -- \
                 /tmp/goss -g /tmp/goss.yaml --vars /tmp/vars.yaml v
-              status=$?
+              cur_status=$?
               set -e
-              if [ $status -eq 0 ]; then
-                echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-goss=success" >> $GITHUB_OUTPUT
-                echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-goss=success"
-              else
-                echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-goss=fail" >> $GITHUB_OUTPUT
-                echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-goss=fail"
-                exit $status
-              fi
-              # goss -g /goss_data/${HELM_APP_NAME}/goss/goss.yaml --vars /goss_data/${HELM_APP_NAME}/goss/vars.yaml v
+              export status=$(( ($status || $cur_status) == 1 ? 1 : 0 ))
             else
               set +e
               kubectl exec -n default $POD_NAME \
                 -- \
                 /tmp/goss -g /tmp/goss.yaml v
-              status=$?
+              cur_status=$?
               set -e
-              if [ $status -eq 0 ]; then
-                echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-goss=success" >> $GITHUB_OUTPUT
-                echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-goss=success"
-              else
-                echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-goss=fail" >> $GITHUB_OUTPUT
-                echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-goss=fail"
-                exit $status
-              fi
-              # goss -g /goss_data/${HELM_APP_NAME}/goss/goss.yaml v
+              export status=$(( ($status || $cur_status) == 1 ? 1 : 0 ))
+            fi
+          done
+          
+          if [ ${#GOSS_ACTIONS[@]} -eq 0 ]; then
+              echo none
+          else
+            if [ $status -eq 0 ]; then
+              echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-goss=success" >> $GITHUB_OUTPUT
+              echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-goss=success"
+            else
+              echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-goss=fail" >> $GITHUB_OUTPUT
+              echo "${{ matrix.USE_IMAGE_TYPE }}-${architecture}-${{ matrix.APP_NAME }}-goss=fail"
+              exit $status
             fi
           fi
 
@@ -692,6 +708,7 @@ jobs:
                 echo "${HELM_APP_NAME} cypress"
                 echo "================================================================"
                 
+                ssh ubuntu@cypress-test "docker run --rm -v /tmp:/e2e -w /e2e ubuntu rm -rf /e2e/cypress-test"
                 ssh ubuntu@cypress-test '/bin/bash -c "rm -rf /tmp/cypress-test ; mkdir -p /tmp/cypress-test"'
                 ssh ubuntu@cypress-test "docker run --rm -v /tmp:/e2e -w /e2e ubuntu rm -rf /e2e/cypress-test"
                 rsync -avzh --delete ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress/ ubuntu@cypress-test:/tmp/cypress-test/
@@ -708,6 +725,7 @@ jobs:
                   exit $status
                 fi
                 ssh ubuntu@cypress-test '/bin/bash -c "rm -rf /tmp/cypress-test ; mkdir -p /tmp/cypress-test"'
+                ssh ubuntu@cypress-test "docker run --rm -v /tmp:/e2e -w /e2e ubuntu rm -rf /e2e/cypress-test"
                 ;;
             esac;
 
