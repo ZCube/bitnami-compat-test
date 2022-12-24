@@ -7,13 +7,21 @@ for HELM_APP_NAME in ${APP_NAMES[@]}; do
       for USE_IMAGE_TYPE in ${USE_IMAGE_TYPES[@]}; do
             for ARCH in ${ARCHS[@]}; do
                 [[ "${ARCH}" == "arm64" && "${USE_IMAGE_TYPE}" == "bitnami" ]] && continue
-                if [ -f ./charts/.vib/${HELM_APP_NAME}/goss/goss.yaml ]
+
+                if [ -f ./charts/.vib/${HELM_APP_NAME}/vib-publish.json ]
                 then
-                    echo       ${USE_IMAGE_TYPE}-${ARCH}-${HELM_APP_NAME}-goss: \$\{\{ steps.goss.outputs.${USE_IMAGE_TYPE}-${ARCH}-${HELM_APP_NAME}-goss \}\}
+                  declare -a GOSS_ACTIONS=( $(cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | yq e -o=j -I=0 '(.phases.verify.actions[] | select(has("action_id") and .action_id == "goss")) | .') )
+
+                  if [ ${#GOSS_ACTIONS[@]} -eq 0 ]; then
+                      echo none > /dev/null
+                  else
+                      echo "      "${USE_IMAGE_TYPE}-${ARCH}-${HELM_APP_NAME}-goss: \$\{\{ steps.goss.outputs.${USE_IMAGE_TYPE}-${ARCH}-${HELM_APP_NAME}-goss \}\}
+                  fi
                 fi
+
                 if [ -f ./charts/.vib/${HELM_APP_NAME}/cypress/cypress.json ]
                 then
-                    echo       ${USE_IMAGE_TYPE}-${ARCH}-${HELM_APP_NAME}-cypress: \$\{\{ steps.cypress.outputs.${USE_IMAGE_TYPE}-${ARCH}-${HELM_APP_NAME}-cypress \}\}
+                    echo "      "${USE_IMAGE_TYPE}-${ARCH}-${HELM_APP_NAME}-cypress: \$\{\{ steps.cypress.outputs.${USE_IMAGE_TYPE}-${ARCH}-${HELM_APP_NAME}-cypress \}\}
                 fi
             done
       done
