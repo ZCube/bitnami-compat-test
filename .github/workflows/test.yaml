@@ -239,6 +239,8 @@ jobs:
 
       - name: prepare k3s cluster by k3d
         run: |
+          docker info
+
           k3d cluster stop test-cluster || true
           k3d cluster delete test-cluster || true
           
