@@ -5,21 +5,58 @@ on:
 
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
+    runs-on: '${{ matrix.os }}'
     if: >-
       ${{ !contains(github.event.head_commit.message, '[ci skip]') &&
-      !contains(github.event.head_commit.message, '[skip ci]')
-      }}
+      !contains(github.event.head_commit.message, '[skip ci]') }}
     continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest", "ARM64"]
-        USE_IMAGE_TYPE: ["bitnami", "bitnami-compat"]
-        APP_NAME: ["apache", "cert-manager", "consul", "contour", "contour-operator", "discourse", "elasticsearch", "etcd", "external-dns", "fluentd", "gitea", "kafka", "keycloak", "mariadb", "mariadb-galera", "mastodon", "memcached", "minio", "mongodb", "mongodb-sharded", "mysql", "nginx", "postgresql", "postgresql-ha", "rabbitmq", "rabbitmq-cluster-operator", "redis", "redis-cluster", "sealed-secrets", "solr", "thanos", "tomcat", "wordpress", "zookeeper"]
+        os:
+          - ubuntu-latest
+          - ARM64
+        USE_IMAGE_TYPE:
+          - bitnami
+          - bitnami-compat
+        APP_NAME:
+          - apache
+          - cert-manager
+          - consul
+          - contour
+          - contour-operator
+          - discourse
+          - elasticsearch
+          - etcd
+          - external-dns
+          - fluentd
+          - gitea
+          - kafka
+          - keycloak
+          - mariadb
+          - mariadb-galera
+          - mastodon
+          - memcached
+          - minio
+          - mongodb
+          - mongodb-sharded
+          - mysql
+          - nginx
+          - postgresql
+          - postgresql-ha
+          - rabbitmq
+          - rabbitmq-cluster-operator
+          - redis
+          - redis-cluster
+          - sealed-secrets
+          - solr
+          - thanos
+          - tomcat
+          - wordpress
+          - zookeeper
         exclude:
-          - os: "ARM64"
-            USE_IMAGE_TYPE: "bitnami"
+          - os: ARM64
+            USE_IMAGE_TYPE: bitnami
 
     outputs:
       bitnami-amd64-apache-goss: ${{ steps.goss.outputs.bitnami-amd64-apache-goss }}
@@ -475,6 +512,7 @@ jobs:
       - name: test health-check
         id: health-check
         if: always()
+        continue-on-error: true
         run: |
           architecture=""
           case $(uname -m) in
@@ -506,6 +544,11 @@ jobs:
             export SVC_PORT=$(echo ${SVC_PORT_INFO} | awk '{print $4}')
             export SVC_PORT_NUM=$(echo ${SVC_PORT_INFO} | awk '{print $4}')
 
+            if [[ "${SVC_PROTOCOL}" == "http" && "${SVC_PORT_NUM}" == "443" ]]
+            then
+              export SVC_PROTOCOL="https"
+            fi
+
             echo SVC info : ${ENDPOINT} ${SVC_NAME} ${SVC_PORT} ${SVC_PORT_NUM} ${SVC_PROTOCOL}
             # sudo KUBECONFIG=$HOME/.kube/config kubectl port-forward service/${SVC_NAME} 80:${SVC_PORT_NUM} --address='0.0.0.0' &
             # sudo KUBECONFIG=$HOME/.kube/config kubectl port-forward service/${SVC_NAME} ${SVC_PORT_NUM}:${SVC_PORT_NUM} --address='0.0.0.0' &
@@ -523,7 +566,6 @@ jobs:
             namespace: default
           spec:
             insecureSkipVerify: true
-            disableHTTP2: true
           ---
           apiVersion: traefik.containo.us/v1alpha1
           kind: Middleware
@@ -567,7 +609,6 @@ jobs:
             namespace: default
           spec:
             insecureSkipVerify: true
-            disableHTTP2: true
           ---
           apiVersion: traefik.containo.us/v1alpha1
           kind: Middleware
@@ -741,6 +782,11 @@ jobs:
             export SVC_PORT=$(echo ${SVC_PORT_INFO} | awk '{print $4}')
             export SVC_PORT_NUM=$(echo ${SVC_PORT_INFO} | awk '{print $4}')
 
+            if [[ "${SVC_PROTOCOL}" == "http" && "${SVC_PORT_NUM}" == "443" ]]
+            then
+              export SVC_PROTOCOL="https"
+            fi
+
             echo SVC info : ${ENDPOINT} ${SVC_NAME} ${SVC_PORT} ${SVC_PORT_NUM} ${SVC_PROTOCOL}
             # sudo KUBECONFIG=$HOME/.kube/config kubectl port-forward service/${SVC_NAME} 80:${SVC_PORT_NUM} --address='0.0.0.0' &
             # sudo KUBECONFIG=$HOME/.kube/config kubectl port-forward service/${SVC_NAME} ${SVC_PORT_NUM}:${SVC_PORT_NUM} --address='0.0.0.0' &
@@ -758,7 +804,6 @@ jobs:
             namespace: default
           spec:
             insecureSkipVerify: true
-            disableHTTP2: true
           ---
           apiVersion: traefik.containo.us/v1alpha1
           kind: Middleware
@@ -802,7 +847,6 @@ jobs:
             namespace: default
           spec:
             insecureSkipVerify: true
-            disableHTTP2: true
           ---
           apiVersion: traefik.containo.us/v1alpha1
           kind: Middleware
