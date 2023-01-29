@@ -379,24 +379,6 @@ jobs:
 
           if [ -f ./charts/.vib/${HELM_APP_NAME}/cypress/cypress.json ]
           then
-            export ENDPOINT=$(cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | jq -r '(.phases.verify.actions[] | select(has("action_id") and .action_id == "cypress")) | .params.endpoint')
-            export SVC_PROTOCOL=$(cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | jq -r '(.phases.verify.actions[] | select(has("action_id") and .action_id == "cypress")) | .params.app_protocol' | tr '[:upper:]' '[:lower:]')
-            export SVC_AND_PORT_NAME=$(echo $ENDPOINT | sed -E 's/([^-]*)-(.*)/\2/')
-            export SVC_PORT_INFO=$(kubectl get svc -o go-template='{{range $k,$v:=.items}}{{range.spec.ports}}{{if .name}}{{$v.metadata.name}}-{{.name}} {{$v.metadata.name}} {{.name}} {{.port}}{{"\n"}}{{$v.metadata.name}}-{{.port}} {{$v.metadata.name}} {{.name}} {{.port}}{{"\n"}}{{else}}{{$v.metadata.name}}-{{.port}} {{$v.metadata.name}} noname {{.port}}{{"\n"}}{{end}}{{end}}{{end}}' | grep "${SVC_AND_PORT_NAME} ")
-            export SVC_NAME=$(echo ${SVC_PORT_INFO} | awk '{print $2}')
-            export SVC_PORT=$(echo ${SVC_PORT_INFO} | awk '{print $4}')
-            export SVC_PORT_NUM=$(echo ${SVC_PORT_INFO} | awk '{print $4}')
-            
-            if [[ "${SVC_PROTOCOL}" == "http" && "${SVC_PORT_NUM}" == "443" ]]
-            then
-              export SVC_PROTOCOL="https"
-            fi
-
-            echo SVC info : ${ENDPOINT} ${SVC_NAME} ${SVC_PORT} ${SVC_PORT_NUM} ${SVC_PROTOCOL}
-            # sudo KUBECONFIG=$HOME/.kube/config kubectl port-forward service/${SVC_NAME} 80:${SVC_PORT_NUM} --address='0.0.0.0' &
-            # sudo KUBECONFIG=$HOME/.kube/config kubectl port-forward service/${SVC_NAME} ${SVC_PORT_NUM}:${SVC_PORT_NUM} --address='0.0.0.0' &
-            export TARGET_IP=$(ip a show $(ip route show default | awk '/default/ {print $5}') | grep "inet " | awk '{print $2}' | cut -d"/" -f1)
-
             # cypress v9 amd64 only
             architecture=""
             case $(uname -m) in
@@ -523,10 +505,6 @@ jobs:
             export SVC_NAME=$(echo ${SVC_PORT_INFO} | awk '{print $2}')
             export SVC_PORT=$(echo ${SVC_PORT_INFO} | awk '{print $4}')
             export SVC_PORT_NUM=$(echo ${SVC_PORT_INFO} | awk '{print $4}')
-            if [[ "${SVC_PROTOCOL}" == "http" && "${SVC_PORT_NUM}" == "443" ]]
-            then
-              export SVC_PROTOCOL="https"
-            fi
 
             echo SVC info : ${ENDPOINT} ${SVC_NAME} ${SVC_PORT} ${SVC_PORT_NUM} ${SVC_PROTOCOL}
             # sudo KUBECONFIG=$HOME/.kube/config kubectl port-forward service/${SVC_NAME} 80:${SVC_PORT_NUM} --address='0.0.0.0' &
@@ -545,6 +523,7 @@ jobs:
             namespace: default
           spec:
             insecureSkipVerify: true
+            disableHTTP2: true
           ---
           apiVersion: traefik.containo.us/v1alpha1
           kind: Middleware
@@ -588,6 +567,7 @@ jobs:
             namespace: default
           spec:
             insecureSkipVerify: true
+            disableHTTP2: true
           ---
           apiVersion: traefik.containo.us/v1alpha1
           kind: Middleware
@@ -760,10 +740,6 @@ jobs:
             export SVC_NAME=$(echo ${SVC_PORT_INFO} | awk '{print $2}')
             export SVC_PORT=$(echo ${SVC_PORT_INFO} | awk '{print $4}')
             export SVC_PORT_NUM=$(echo ${SVC_PORT_INFO} | awk '{print $4}')
-            if [[ "${SVC_PROTOCOL}" == "http" && "${SVC_PORT_NUM}" == "443" ]]
-            then
-              export SVC_PROTOCOL="https"
-            fi
 
             echo SVC info : ${ENDPOINT} ${SVC_NAME} ${SVC_PORT} ${SVC_PORT_NUM} ${SVC_PROTOCOL}
             # sudo KUBECONFIG=$HOME/.kube/config kubectl port-forward service/${SVC_NAME} 80:${SVC_PORT_NUM} --address='0.0.0.0' &
@@ -782,6 +758,7 @@ jobs:
             namespace: default
           spec:
             insecureSkipVerify: true
+            disableHTTP2: true
           ---
           apiVersion: traefik.containo.us/v1alpha1
           kind: Middleware
@@ -825,6 +802,7 @@ jobs:
             namespace: default
           spec:
             insecureSkipVerify: true
+            disableHTTP2: true
           ---
           apiVersion: traefik.containo.us/v1alpha1
           kind: Middleware
