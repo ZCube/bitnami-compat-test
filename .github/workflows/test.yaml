@@ -171,10 +171,7 @@ jobs:
         run: git submodule init
       - name: Checkout bitnami recipe
         shell: bash
-        run: |
-          git submodule update charts
-          cd charts
-          git pull
+        run: git submodule update charts
       - name: uninstall qemu
         run: |
           docker run --privileged --rm tonistiigi/binfmt --uninstall all
@@ -189,6 +186,7 @@ jobs:
           fi
           
           helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo update
 
       - name: install kubectl
         run: |
