@@ -16,12 +16,18 @@ jobs:
       matrix:
         os: ["ubuntu-latest", "ARM64"]
         USE_IMAGE_TYPE: ["bitnami", "bitnami-compat"]
-        APP_NAME: ["cert-manager", "consul", "contour", "contour-operator", "discourse", "elasticsearch", "etcd", "external-dns", "fluentd", "gitea", "kafka", "keycloak", "mariadb", "mariadb-galera", "memcached", "minio", "mongodb", "mongodb-sharded", "mysql", "nginx", "postgresql", "postgresql-ha", "rabbitmq", "rabbitmq-cluster-operator", "redis", "redis-cluster", "sealed-secrets", "solr", "thanos", "tomcat", "wordpress", "zookeeper"]
+        APP_NAME: ["apache", "cert-manager", "consul", "contour", "contour-operator", "discourse", "elasticsearch", "etcd", "external-dns", "fluentd", "gitea", "kafka", "keycloak", "mariadb", "mariadb-galera", "mastodon", "memcached", "minio", "mongodb", "mongodb-sharded", "mysql", "nginx", "node", "postgresql", "postgresql-ha", "rabbitmq", "rabbitmq-cluster-operator", "redis", "redis-cluster", "sealed-secrets", "solr", "thanos", "tomcat", "wordpress", "zookeeper"]
         exclude:
           - os: "ARM64"
             USE_IMAGE_TYPE: "bitnami"
 
     outputs:
+      bitnami-amd64-apache-goss: ${{ steps.goss.outputs.bitnami-amd64-apache-goss }}
+      bitnami-amd64-apache-cypress: ${{ steps.cypress.outputs.bitnami-amd64-apache-cypress }}
+      bitnami-compat-arm64-apache-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-apache-goss }}
+      bitnami-compat-arm64-apache-cypress: ${{ steps.cypress.outputs.bitnami-compat-arm64-apache-cypress }}
+      bitnami-compat-amd64-apache-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-apache-goss }}
+      bitnami-compat-amd64-apache-cypress: ${{ steps.cypress.outputs.bitnami-compat-amd64-apache-cypress }}
       bitnami-amd64-cert-manager-goss: ${{ steps.goss.outputs.bitnami-amd64-cert-manager-goss }}
       bitnami-compat-arm64-cert-manager-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-cert-manager-goss }}
       bitnami-compat-amd64-cert-manager-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-cert-manager-goss }}
@@ -76,6 +82,12 @@ jobs:
       bitnami-amd64-mariadb-galera-goss: ${{ steps.goss.outputs.bitnami-amd64-mariadb-galera-goss }}
       bitnami-compat-arm64-mariadb-galera-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-mariadb-galera-goss }}
       bitnami-compat-amd64-mariadb-galera-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-mariadb-galera-goss }}
+      bitnami-amd64-mastodon-goss: ${{ steps.goss.outputs.bitnami-amd64-mastodon-goss }}
+      bitnami-amd64-mastodon-cypress: ${{ steps.cypress.outputs.bitnami-amd64-mastodon-cypress }}
+      bitnami-compat-arm64-mastodon-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-mastodon-goss }}
+      bitnami-compat-arm64-mastodon-cypress: ${{ steps.cypress.outputs.bitnami-compat-arm64-mastodon-cypress }}
+      bitnami-compat-amd64-mastodon-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-mastodon-goss }}
+      bitnami-compat-amd64-mastodon-cypress: ${{ steps.cypress.outputs.bitnami-compat-amd64-mastodon-cypress }}
       bitnami-amd64-memcached-goss: ${{ steps.goss.outputs.bitnami-amd64-memcached-goss }}
       bitnami-compat-arm64-memcached-goss: ${{ steps.goss.outputs.bitnami-compat-arm64-memcached-goss }}
       bitnami-compat-amd64-memcached-goss: ${{ steps.goss.outputs.bitnami-compat-amd64-memcached-goss }}
@@ -152,14 +164,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        repository: zcube/bitnami-compat
+      - name: Submodule init
+        shell: bash
+        run: git submodule init
+      - name: Checkout bitnami recipe
+        shell: bash
+        run: git submodule update charts
       - name: uninstall qemu
         run: |
           docker run --privileged --rm tonistiigi/binfmt --uninstall all
-
-      - name: clone bitnami charts
-        run: |
-          git clone --depth=1 https://github.com/bitnami/charts
-          git clone --depth=1 https://github.com/zcube/bitnami-compat
 
       - name: install helm
         run: |
@@ -246,7 +260,7 @@ jobs:
           
           docker volume rm k3d-test-cluster-images || true
           sudo mkdir -p containers
-          sudo chmod 0701 containers
+          sudo chmod 0710 containers
           sudo chown root:root containers
 
           if [ -f /etc/registries.yaml ]
@@ -309,15 +323,15 @@ jobs:
                 -f values_bitnami.yaml \
                 -f values_debug.yaml \
                 --set fullnameOverride=${HELM_APP_NAME} \
-                --wait --timeout 600s
+                --timeout 900s
               ;;
             bitnami-compat) 
               helm upgrade -i ${HELM_RELEASE_NAME} bitnami/${HELM_APP_NAME} \
                 -f values_bitnami.yaml \
                 -f values_debug.yaml \
-                -f bitnami-compat/values/values_bitnami_compat_${HELM_APP_NAME}.yaml \
+                -f values/values_bitnami_compat_${HELM_APP_NAME}.yaml \
                 --set fullnameOverride=${HELM_APP_NAME} \
-                --wait --timeout 600s
+                --timeout 900s
               ;;
           esac;
 
@@ -370,97 +384,16 @@ jobs:
             export SVC_NAME=$(echo ${SVC_PORT_INFO} | awk '{print $2}')
             export SVC_PORT=$(echo ${SVC_PORT_INFO} | awk '{print $4}')
             export SVC_PORT_NUM=$(echo ${SVC_PORT_INFO} | awk '{print $4}')
-            echo SVC info : ${ENDPOINT} ${SVC_NAME} ${SVC_PORT} ${SVC_PORT_NUM}
+            
+            if [[ "${SVC_PROTOCOL}" == "http" && "${SVC_PORT_NUM}" == "443" ]]
+            then
+              export SVC_PROTOCOL="https"
+            fi
+
+            echo SVC info : ${ENDPOINT} ${SVC_NAME} ${SVC_PORT} ${SVC_PORT_NUM} ${SVC_PROTOCOL}
             # sudo KUBECONFIG=$HOME/.kube/config kubectl port-forward service/${SVC_NAME} 80:${SVC_PORT_NUM} --address='0.0.0.0' &
             # sudo KUBECONFIG=$HOME/.kube/config kubectl port-forward service/${SVC_NAME} ${SVC_PORT_NUM}:${SVC_PORT_NUM} --address='0.0.0.0' &
             export TARGET_IP=$(ip a show $(ip route show default | awk '/default/ {print $5}') | grep "inet " | awk '{print $2}' | cut -d"/" -f1)
-
-            case "${SVC_PROTOCOL}" in
-              https) 
-            cat <<EOF > ingress.yaml
-          ---
-          apiVersion: traefik.containo.us/v1alpha1
-          kind: ServersTransport
-          metadata:
-            name: insecuretransport
-            namespace: default
-          spec:
-            insecureSkipVerify: true
-          ---
-          apiVersion: traefik.containo.us/v1alpha1
-          kind: Middleware
-          metadata:
-            name: https
-            namespace: default
-          spec:
-            redirectScheme:
-              scheme: https
-              permanent: true
-          ---
-          apiVersion: traefik.containo.us/v1alpha1
-          kind: IngressRoute
-          metadata:
-            name: cypress
-            namespace: default
-          spec:
-            entryPoints:
-            - web
-            - websecure
-            routes:
-            - kind: Rule
-              match: PathPrefix(\`/\`)
-              services:
-              - name: ${SVC_NAME}
-                port: ${SVC_PORT_NUM}
-                scheme: ${SVC_PROTOCOL}
-                serversTransport: insecuretransport
-              middlewares:
-              - name: https
-          EOF
-            kubectl apply -f ingress.yaml
-                ;;
-              *) 
-            cat <<EOF > ingress.yaml
-          ---
-          apiVersion: traefik.containo.us/v1alpha1
-          kind: ServersTransport
-          metadata:
-            name: insecuretransport
-            namespace: default
-          spec:
-            insecureSkipVerify: true
-          ---
-          apiVersion: traefik.containo.us/v1alpha1
-          kind: Middleware
-          metadata:
-            name: https
-            namespace: default
-          spec:
-            redirectScheme:
-              scheme: https
-              permanent: true
-          ---
-          apiVersion: traefik.containo.us/v1alpha1
-          kind: IngressRoute
-          metadata:
-            name: cypress
-            namespace: default
-          spec:
-            entryPoints:
-            - web
-            - websecure
-            routes:
-            - kind: Rule
-              match: PathPrefix(\`/\`)
-              services:
-              - name: ${SVC_NAME}
-                port: ${SVC_PORT_NUM}
-                scheme: ${SVC_PROTOCOL}
-                serversTransport: insecuretransport
-          EOF
-            kubectl apply -f ingress.yaml
-                ;;
-            esac;
 
             # cypress v9 amd64 only
             architecture=""
@@ -493,6 +426,7 @@ jobs:
           kubectl get ingress
           kubectl get pv
           kubectl get pvc
+          kubectl get jobs
           
           docker exec -i k3d-test-cluster-agent-0 crictl images --digests
 
@@ -549,9 +483,162 @@ jobs:
           kubectl get ingress
           kubectl get pv
           kubectl get pvc
+          kubectl get jobs
 
           docker exec -i k3d-test-cluster-agent-0 crictl images --digests
           
+
+      - name: test health-check
+        id: health-check
+        if: always()
+        run: |
+          architecture=""
+          case $(uname -m) in
+            x86_64)  architecture="amd64" ;;
+            aarch64) architecture="arm64" ;;
+          esac
+          echo ${architecture}
+
+          export HELM_APP_NAME=${{ matrix.APP_NAME }}
+          export HELM_RELEASE_NAME=${{ matrix.APP_NAME }}
+          export USE_IMAGE_TYPE=${{ matrix.USE_IMAGE_TYPE }}
+
+
+          echo "================================================================"
+          echo "${HELM_APP_NAME} health-check"
+          echo "================================================================"
+          
+          export status=0
+
+          declare -a HEALTH_CHECK_ACTIONS=( $(cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | yq e -o=j -I=0 '(.phases.verify.actions[] | select(has("action_id") and .action_id == "health-check")) | .') )
+          for json in "${HEALTH_CHECK_ACTIONS[@]}" ; do
+            echo $json
+
+            export ENDPOINT=$(echo $json | yq -r '.params.endpoint')
+            export SVC_PROTOCOL=$(echo $json | yq -r '.params.app_protocol' | tr '[:upper:]' '[:lower:]')
+            export SVC_AND_PORT_NAME=$(echo $ENDPOINT | sed -E 's/([^-]*)-(.*)/\2/')
+            export SVC_PORT_INFO=$(kubectl get svc -o go-template='{{range $k,$v:=.items}}{{range.spec.ports}}{{if .name}}{{$v.metadata.name}}-{{.name}} {{$v.metadata.name}} {{.name}} {{.port}}{{"\n"}}{{$v.metadata.name}}-{{.port}} {{$v.metadata.name}} {{.name}} {{.port}}{{"\n"}}{{else}}{{$v.metadata.name}}-{{.port}} {{$v.metadata.name}} noname {{.port}}{{"\n"}}{{end}}{{end}}{{end}}' | grep "${SVC_AND_PORT_NAME} ")
+            export SVC_NAME=$(echo ${SVC_PORT_INFO} | awk '{print $2}')
+            export SVC_PORT=$(echo ${SVC_PORT_INFO} | awk '{print $4}')
+            export SVC_PORT_NUM=$(echo ${SVC_PORT_INFO} | awk '{print $4}')
+            if [[ "${SVC_PROTOCOL}" == "http" && "${SVC_PORT_NUM}" == "443" ]]
+            then
+              export SVC_PROTOCOL="https"
+            fi
+
+            echo SVC info : ${ENDPOINT} ${SVC_NAME} ${SVC_PORT} ${SVC_PORT_NUM} ${SVC_PROTOCOL}
+            # sudo KUBECONFIG=$HOME/.kube/config kubectl port-forward service/${SVC_NAME} 80:${SVC_PORT_NUM} --address='0.0.0.0' &
+            # sudo KUBECONFIG=$HOME/.kube/config kubectl port-forward service/${SVC_NAME} ${SVC_PORT_NUM}:${SVC_PORT_NUM} --address='0.0.0.0' &
+            export TARGET_IP=$(ip a show $(ip route show default | awk '/default/ {print $5}') | grep "inet " | awk '{print $2}' | cut -d"/" -f1)
+
+            # ingress
+            case "${SVC_PROTOCOL}" in
+              https)
+            cat <<EOF > ingress.yaml
+          ---
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: ServersTransport
+          metadata:
+            name: insecuretransport
+            namespace: default
+          spec:
+            insecureSkipVerify: true
+          ---
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: Middleware
+          metadata:
+            name: https
+            namespace: default
+          spec:
+            redirectScheme:
+              scheme: https
+              permanent: true
+          ---
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: IngressRoute
+          metadata:
+            name: cypress
+            namespace: default
+          spec:
+            entryPoints:
+            - web
+            - websecure
+            routes:
+            - kind: Rule
+              match: PathPrefix(\`/\`)
+              services:
+              - name: ${SVC_NAME}
+                port: ${SVC_PORT_NUM}
+                scheme: ${SVC_PROTOCOL}
+                serversTransport: insecuretransport
+              middlewares:
+              - name: https
+          EOF
+            kubectl apply -f ingress.yaml
+                ;;
+              *)
+            cat <<EOF > ingress.yaml
+          ---
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: ServersTransport
+          metadata:
+            name: insecuretransport
+            namespace: default
+          spec:
+            insecureSkipVerify: true
+          ---
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: Middleware
+          metadata:
+            name: https
+            namespace: default
+          spec:
+            redirectScheme:
+              scheme: https
+              permanent: true
+          ---
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: IngressRoute
+          metadata:
+            name: cypress
+            namespace: default
+          spec:
+            entryPoints:
+            - web
+            - websecure
+            routes:
+            - kind: Rule
+              match: PathPrefix(\`/\`)
+              services:
+              - name: ${SVC_NAME}
+                port: ${SVC_PORT_NUM}
+                scheme: ${SVC_PROTOCOL}
+                serversTransport: insecuretransport
+          EOF
+            kubectl apply -f ingress.yaml
+                ;;
+            esac;
+
+            # wait for svc
+            wait-for-url() {
+                echo "Testing $1"
+                timeout -s TERM 120 bash -c \
+                'while [[ "$(curl -s --insecure -o /dev/null -L -w ''%{http_code}'' ${0})" != "200" && "$(curl -s --insecure -o /dev/null -L -w ''%{http_code}'' ${0}/healthz)" != "200" && "$(curl -s --insecure -o /dev/null -L -w ''%{http_code}'' ${0}/health)" != "200" && "$(curl -s --insecure -o /dev/null -L -w ''%{http_code}'' ${0}/metrics)" != "200" ]];\
+                do echo "Waiting for ${0}" && sleep 2;\
+                done' ${1}
+                echo "OK!"
+                curl -I $1
+            }
+
+            case "${SVC_PROTOCOL}" in
+              https)
+                wait-for-url https://${TARGET_IP}
+                ;;
+              http)
+                wait-for-url http://${TARGET_IP}
+                ;;
+            esac;
+          done
 
       - name: test goss
         id: goss
@@ -671,10 +758,104 @@ jobs:
             export SVC_NAME=$(echo ${SVC_PORT_INFO} | awk '{print $2}')
             export SVC_PORT=$(echo ${SVC_PORT_INFO} | awk '{print $4}')
             export SVC_PORT_NUM=$(echo ${SVC_PORT_INFO} | awk '{print $4}')
-            echo SVC info : ${ENDPOINT} ${SVC_NAME} ${SVC_PORT} ${SVC_PORT_NUM}
+            if [[ "${SVC_PROTOCOL}" == "http" && "${SVC_PORT_NUM}" == "443" ]]
+            then
+              export SVC_PROTOCOL="https"
+            fi
+
+            echo SVC info : ${ENDPOINT} ${SVC_NAME} ${SVC_PORT} ${SVC_PORT_NUM} ${SVC_PROTOCOL}
             # sudo KUBECONFIG=$HOME/.kube/config kubectl port-forward service/${SVC_NAME} 80:${SVC_PORT_NUM} --address='0.0.0.0' &
             # sudo KUBECONFIG=$HOME/.kube/config kubectl port-forward service/${SVC_NAME} ${SVC_PORT_NUM}:${SVC_PORT_NUM} --address='0.0.0.0' &
             export TARGET_IP=$(ip a show $(ip route show default | awk '/default/ {print $5}') | grep "inet " | awk '{print $2}' | cut -d"/" -f1)
+
+            # ingress
+            case "${SVC_PROTOCOL}" in
+              https)
+            cat <<EOF > ingress.yaml
+          ---
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: ServersTransport
+          metadata:
+            name: insecuretransport
+            namespace: default
+          spec:
+            insecureSkipVerify: true
+          ---
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: Middleware
+          metadata:
+            name: https
+            namespace: default
+          spec:
+            redirectScheme:
+              scheme: https
+              permanent: true
+          ---
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: IngressRoute
+          metadata:
+            name: cypress
+            namespace: default
+          spec:
+            entryPoints:
+            - web
+            - websecure
+            routes:
+            - kind: Rule
+              match: PathPrefix(\`/\`)
+              services:
+              - name: ${SVC_NAME}
+                port: ${SVC_PORT_NUM}
+                scheme: ${SVC_PROTOCOL}
+                serversTransport: insecuretransport
+              middlewares:
+              - name: https
+          EOF
+            kubectl apply -f ingress.yaml
+                ;;
+              *)
+            cat <<EOF > ingress.yaml
+          ---
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: ServersTransport
+          metadata:
+            name: insecuretransport
+            namespace: default
+          spec:
+            insecureSkipVerify: true
+          ---
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: Middleware
+          metadata:
+            name: https
+            namespace: default
+          spec:
+            redirectScheme:
+              scheme: https
+              permanent: true
+          ---
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: IngressRoute
+          metadata:
+            name: cypress
+            namespace: default
+          spec:
+            entryPoints:
+            - web
+            - websecure
+            routes:
+            - kind: Rule
+              match: PathPrefix(\`/\`)
+              services:
+              - name: ${SVC_NAME}
+                port: ${SVC_PORT_NUM}
+                scheme: ${SVC_PROTOCOL}
+                serversTransport: insecuretransport
+          EOF
+            kubectl apply -f ingress.yaml
+                ;;
+            esac;
+
 
             # template
             cat ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress/cypress.json | mo > ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress/cypress.json_
@@ -694,7 +875,7 @@ jobs:
                 echo "================================================================"
 
                 set +e
-                docker run -e CYPRESS_VERIFY_TIMEOUT=${CYPRESS_VERIFY_TIMEOUT} --rm -v ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress:/e2e -w /e2e cypress/included:${CYPRESS_VERSION} --headless --browser chrome --config video=false
+                docker run --rm -e CYPRESS_VERIFY_TIMEOUT=${CYPRESS_VERIFY_TIMEOUT} -v ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress:/e2e -w /e2e cypress/included:${CYPRESS_VERSION} --headless --browser chrome
                 status=$?
                 set -e
                 if [ $status -eq 0 ]; then
@@ -716,7 +897,7 @@ jobs:
                 ssh ubuntu@cypress-test "docker run --rm -v /tmp:/e2e -w /e2e ubuntu rm -rf /e2e/cypress-test"
                 rsync -avzh --delete ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress/ ubuntu@cypress-test:/tmp/cypress-test/
                 set +e
-                ssh ubuntu@cypress-test "docker run --platform linux/amd64 -e CYPRESS_VERIFY_TIMEOUT=${CYPRESS_VERIFY_TIMEOUT} --rm -v /tmp/cypress-test:/e2e -w /e2e cypress/included:${CYPRESS_VERSION} --headless --browser chrome --config video=false"
+                ssh ubuntu@cypress-test "docker run --platform linux/amd64 --rm -e CYPRESS_VERIFY_TIMEOUT=${CYPRESS_VERIFY_TIMEOUT} -v /tmp/cypress-test:/e2e -w /e2e cypress/included:${CYPRESS_VERSION} --headless --browser chrome"
                 status=$?
                 set -e
                 if [ $status -eq 0 ]; then
