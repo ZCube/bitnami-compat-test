@@ -164,7 +164,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        repository: zcube/bitnami-compat
+        with:
+          repository: zcube/bitnami-compat
       - name: Submodule init
         shell: bash
         run: git submodule init
