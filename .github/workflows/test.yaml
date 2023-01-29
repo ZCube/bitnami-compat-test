@@ -16,7 +16,7 @@ jobs:
       matrix:
         os: ["ubuntu-latest", "ARM64"]
         USE_IMAGE_TYPE: ["bitnami", "bitnami-compat"]
-        APP_NAME: ["apache", "cert-manager", "consul", "contour", "contour-operator", "discourse", "elasticsearch", "etcd", "external-dns", "fluentd", "gitea", "kafka", "keycloak", "mariadb", "mariadb-galera", "mastodon", "memcached", "minio", "mongodb", "mongodb-sharded", "mysql", "nginx", "node", "postgresql", "postgresql-ha", "rabbitmq", "rabbitmq-cluster-operator", "redis", "redis-cluster", "sealed-secrets", "solr", "thanos", "tomcat", "wordpress", "zookeeper"]
+        APP_NAME: ["apache", "cert-manager", "consul", "contour", "contour-operator", "discourse", "elasticsearch", "etcd", "external-dns", "fluentd", "gitea", "kafka", "keycloak", "mariadb", "mariadb-galera", "mastodon", "memcached", "minio", "mongodb", "mongodb-sharded", "mysql", "nginx", "postgresql", "postgresql-ha", "rabbitmq", "rabbitmq-cluster-operator", "redis", "redis-cluster", "sealed-secrets", "solr", "thanos", "tomcat", "wordpress", "zookeeper"]
         exclude:
           - os: "ARM64"
             USE_IMAGE_TYPE: "bitnami"
@@ -171,7 +171,10 @@ jobs:
         run: git submodule init
       - name: Checkout bitnami recipe
         shell: bash
-        run: git submodule update charts
+        run: |
+          git submodule update charts
+          cd charts
+          git pull
       - name: uninstall qemu
         run: |
           docker run --privileged --rm tonistiigi/binfmt --uninstall all
@@ -876,7 +879,7 @@ jobs:
                 echo "================================================================"
 
                 set +e
-                docker run --rm -e CYPRESS_VERIFY_TIMEOUT=${CYPRESS_VERIFY_TIMEOUT} -v ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress:/e2e -w /e2e cypress/included:${CYPRESS_VERSION} --headless --browser chrome
+                docker run --rm -e CYPRESS_VERIFY_TIMEOUT=${CYPRESS_VERIFY_TIMEOUT} -v ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress:/e2e -w /e2e cypress/included:${CYPRESS_VERSION} --headless --browser chrome --config video=false
                 status=$?
                 set -e
                 if [ $status -eq 0 ]; then
@@ -898,7 +901,7 @@ jobs:
                 ssh ubuntu@cypress-test "docker run --rm -v /tmp:/e2e -w /e2e ubuntu rm -rf /e2e/cypress-test"
                 rsync -avzh --delete ${PWD}/charts/.vib/${HELM_APP_NAME}/cypress/ ubuntu@cypress-test:/tmp/cypress-test/
                 set +e
-                ssh ubuntu@cypress-test "docker run --platform linux/amd64 --rm -e CYPRESS_VERIFY_TIMEOUT=${CYPRESS_VERIFY_TIMEOUT} -v /tmp/cypress-test:/e2e -w /e2e cypress/included:${CYPRESS_VERSION} --headless --browser chrome"
+                ssh ubuntu@cypress-test "docker run --platform linux/amd64 --rm -e CYPRESS_VERIFY_TIMEOUT=${CYPRESS_VERIFY_TIMEOUT} -v /tmp/cypress-test:/e2e -w /e2e cypress/included:${CYPRESS_VERSION} --headless --browser chrome --config video=false"
                 status=$?
                 set -e
                 if [ $status -eq 0 ]; then

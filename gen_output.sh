@@ -1,5 +1,5 @@
 #!/bin/bash
-declare -a APP_NAMES=( "apache" "cert-manager" "consul" "contour" "contour-operator" "discourse" "elasticsearch" "etcd" "external-dns" "fluentd" "gitea" "kafka" "keycloak" "mariadb" "mariadb-galera" "mastodon" "memcached" "minio" "mongodb" "mongodb-sharded" "mysql" "nginx" "node" "postgresql" "postgresql-ha" "rabbitmq" "rabbitmq-cluster-operator" "redis" "redis-cluster" "sealed-secrets" "solr" "thanos" "tomcat" "wordpress" "zookeeper" )
+declare -a APP_NAMES=( "apache" "cert-manager" "consul" "contour" "contour-operator" "discourse" "elasticsearch" "etcd" "external-dns" "fluentd" "gitea" "kafka" "keycloak" "mariadb" "mariadb-galera" "mastodon" "memcached" "minio" "mongodb" "mongodb-sharded" "mysql" "nginx" "postgresql" "postgresql-ha" "rabbitmq" "rabbitmq-cluster-operator" "redis" "redis-cluster" "sealed-secrets" "solr" "thanos" "tomcat" "wordpress" "zookeeper" )
 declare -a ARCHS=( "arm64" "amd64" )
 declare -a USE_IMAGE_TYPES=( "bitnami" "bitnami-compat" )
 
