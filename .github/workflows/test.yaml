@@ -940,6 +940,80 @@ jobs:
             # sudo pkill kubectl
           fi
 
+      - name: dump pod info
+        if: always()
+        run: |
+          export HELM_APP_NAME=${{ matrix.APP_NAME }}
+          export HELM_RELEASE_NAME=${{ matrix.APP_NAME }}
+          export USE_IMAGE_TYPE=${{ matrix.USE_IMAGE_TYPE }}
+
+          # pod list
+          kubectl get pods
+          kubectl get svc
+          kubectl get ingress
+          kubectl get pv
+          kubectl get pvc
+          kubectl get jobs
+          
+          docker exec -i k3d-test-cluster-agent-0 crictl images --digests
+
+          kubectl get deploy --output name | \
+            xargs -n1 -t \
+              kubectl rollout status --timeout 180s || true &
+
+          kubectl get ds --output name | \
+            xargs -n1 -t \
+              kubectl rollout status --timeout 180s || true &
+
+          kubectl get sts --output name | \
+            xargs -n1 -t \
+              kubectl rollout status --timeout 180s || true &
+          
+          kubectl get rs --output name | \
+            xargs -n1 -t \
+              kubectl rollout status --timeout 180s || true &
+          
+          wait
+
+          declare -a GOSS_ACTIONS=( $(cat charts/.vib/${HELM_APP_NAME}/vib-publish.json | yq e -o=j -I=0 '(.phases.verify.actions[] | select(has("action_id") and .action_id == "goss")) | .') )
+          for json in "${GOSS_ACTIONS[@]}" ; do
+            echo $json
+          
+            export POD_TYPE=$(echo $json | yq -r '.params.remote.workload' | cut -d '-' -f1)
+            export POD_NAME=$(echo $json | yq -r '.params.remote.workload' | cut -d '-' -f2-)
+            case "${POD_TYPE}" in
+              pod)
+                ;;
+              *)
+                export OWNER_UID=$(kubectl get ${POD_TYPE} ${POD_NAME} -o jsonpath='{.metadata.uid}')
+                export REPLICA_NAME=$(kubectl get rs -o go-template='{{range .items}}{{.metadata.name}} {{if .metadata.ownerReferences}}{{range .metadata.ownerReferences}} {{.uid}} {{end}}{{end}} {{"\n"}}{{end}}' | grep $OWNER_UID | head -n 1 | awk '{print $1}')
+                if [ ! -z ${REPLICA_NAME} ]; then
+                  export OWNER_UID=$(kubectl get rs ${REPLICA_NAME} -o jsonpath='{.metadata.uid}');
+                fi
+                export POD_NAME=$(kubectl get pods -o go-template='{{range .items}}{{.metadata.name}} {{if .metadata.ownerReferences}}{{range .metadata.ownerReferences}} {{.uid}} {{end}}{{end}} {{"\n"}}{{end}}' | grep $OWNER_UID | head -n 1 | awk '{print $1}')
+                ;;
+            esac;
+          
+            echo Testing with pod: $POD_NAME
+            
+            # pod logs
+            kubectl logs -n default ${POD_NAME}
+
+            # pod describe
+            kubectl describe pod -n default ${POD_NAME}
+
+          done
+          
+          # pod list
+          kubectl get pods
+          kubectl get svc
+          kubectl get ingress
+          kubectl get pv
+          kubectl get pvc
+          kubectl get jobs
+
+          docker exec -i k3d-test-cluster-agent-0 crictl images --digests
+          
       - name: Cleanup k3d
         if: always()
         run: |
