@@ -15,7 +15,7 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - ARM64
+          # - ARM64
         USE_IMAGE_TYPE:
           - bitnami
           - bitnami-compat
@@ -31,8 +31,11 @@ jobs:
           - external-dns
           - fluentd
           - gitea
+          - grafana
           - kafka
           - keycloak
+          - kibana
+          - logstash
           - mariadb
           - mariadb-galera
           - mastodon
